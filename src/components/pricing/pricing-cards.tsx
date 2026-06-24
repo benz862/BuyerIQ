@@ -55,7 +55,7 @@ function CheckoutButton({
   const owned = hasMinPlan(currentPlan, plan);
 
   return (
-    <div className="space-y-2">
+    <div className="w-full space-y-2">
       <Button
         className={cn("h-11 w-full rounded-full text-base", highlighted && "shadow-md")}
         variant={highlighted ? "default" : "outline"}
@@ -110,15 +110,17 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
         </CardFooter>
       </Card>
 
-      <Card className="relative border-primary/30 bg-card shadow-lg ring-1 ring-primary/10">
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
-          Most complete
-        </div>
+      <Card className="border-primary/30 bg-card shadow-lg ring-1 ring-primary/10">
         <CardHeader className="space-y-4 pb-4">
           <div>
-            <CardTitle className="text-2xl font-semibold tracking-tight">
-              BuyerIQ Pro
-            </CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="text-2xl font-semibold tracking-tight">
+                BuyerIQ Pro
+              </CardTitle>
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                Most complete
+              </span>
+            </div>
             <CardDescription className="mt-2 text-base leading-relaxed">
               Advanced reports, regional intelligence, enhanced comparisons, and future updates.
             </CardDescription>
