@@ -348,9 +348,7 @@ export function estimateMonthlyCost(property: Property): number | null {
 
 export function informationCompletenessScore(property: Property) {
   const checks: Array<[string, unknown]> = [
-    ["Price", property.purchase_price],
-    ["Taxes", property.property_taxes],
-    ["HOA fees", property.hoa_fees],
+    [property.project_mode === "renting" ? "Monthly rent" : "Price or housing budget", property.purchase_price],
     ["Insurance information", property.insurance_estimate],
     ["Square footage", property.square_footage],
     ["Bedrooms", property.bedrooms],
@@ -367,6 +365,9 @@ export function informationCompletenessScore(property: Property) {
 
   if (property.project_mode === "renting") {
     checks.push(["Lease terms", property.lease_terms]);
+  } else {
+    checks.push(["Taxes", property.property_taxes]);
+    checks.push(["HOA or community fees", property.hoa_fees]);
   }
 
   const complete = checks.filter(([, value]) => Boolean(value)).length;

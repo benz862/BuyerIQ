@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,69 @@ const flexibilityFields = [
   ["remote_work_score", "Remote work"],
 ] as const;
 
+type FormMode = "buying" | "renting" | "relocating";
+
+const modeCopy: Record<
+  FormMode,
+  {
+    description: string;
+    priceLabel: string;
+    pricePlaceholder: string;
+    priceHelp: string;
+    insuranceLabel: string;
+    insurancePlaceholder: string;
+    notesLabel: string;
+    notesPlaceholder: string;
+    timelineLabel: string;
+    timelinePlaceholder: string;
+    conditionHelp: string;
+    flexibilityHelp: string;
+  }
+> = {
+  buying: {
+    description: "Add ownership facts, then refine after showings, inspections, and lender estimates.",
+    priceLabel: "Purchase price",
+    pricePlaceholder: "450000",
+    priceHelp: "Used for ownership cost and budget fit.",
+    insuranceLabel: "Annual homeowners insurance estimate",
+    insurancePlaceholder: "1800",
+    notesLabel: "Buyer notes",
+    notesPlaceholder: "First impressions, concerns, offer thoughts...",
+    timelineLabel: "Offer or move timeline",
+    timelinePlaceholder: "Offer date, inspection window, closing target...",
+    conditionHelp: "Rate visible condition now. Unknown is acceptable until inspection.",
+    flexibilityHelp: "Score how well the home adapts over time.",
+  },
+  renting: {
+    description: "Focus on rent, lease terms, move-in costs, management quality, and day-to-day fit.",
+    priceLabel: "Monthly rent",
+    pricePlaceholder: "2400",
+    priceHelp: "Stored as the monthly housing cost for rental scoring.",
+    insuranceLabel: "Monthly renters insurance estimate",
+    insurancePlaceholder: "25",
+    notesLabel: "Renter notes",
+    notesPlaceholder: "Lease concerns, landlord questions, move-in condition, fees...",
+    timelineLabel: "Lease or move-in timeline",
+    timelinePlaceholder: "Application deadline, lease start, move-in date...",
+    conditionHelp: "Rate visible condition and maintenance concerns before applying or signing.",
+    flexibilityHelp: "Score how well the rental supports your lease term, work, pets, and lifestyle.",
+  },
+  relocating: {
+    description: "Compare the address and area against relocation priorities, costs, timing, and future fit.",
+    priceLabel: "Estimated housing budget or monthly cost",
+    pricePlaceholder: "3500",
+    priceHelp: "Use monthly target for rentals or estimated purchase budget for ownership research.",
+    insuranceLabel: "Insurance estimate if known",
+    insurancePlaceholder: "1800",
+    notesLabel: "Relocation notes",
+    notesPlaceholder: "Neighborhood impressions, commute concerns, family needs, timing...",
+    timelineLabel: "Relocation timeline",
+    timelinePlaceholder: "Target move date, school calendar, job start, travel dates...",
+    conditionHelp: "Use unknown where condition is not yet verified during remote research.",
+    flexibilityHelp: "Score how well the location and property support your next stage of life.",
+  },
+};
+
 function ScoreInput({ name, label }: { name: string; label: string }) {
   return (
     <div className="space-y-2">
@@ -62,6 +125,8 @@ export function PropertyForm() {
     createProperty,
     initialState
   );
+  const [mode, setMode] = useState<FormMode>("buying");
+  const copy = modeCopy[mode];
 
   return (
     <form action={formAction} className="space-y-8">
@@ -69,13 +134,13 @@ export function PropertyForm() {
         <div>
           <h2 className="text-lg font-semibold">Property details</h2>
           <p className="text-sm text-muted-foreground">
-            Manual entry only. Add the facts you know, then refine after showings and inspections.
+            Manual entry only. {copy.description}
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="project_mode">Mode</Label>
-            <Select name="project_mode" defaultValue="buying">
+            <Select name="project_mode" value={mode} onValueChange={(value) => setMode(value as FormMode)}>
               <SelectTrigger id="project_mode" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -86,6 +151,16 @@ export function PropertyForm() {
               </SelectContent>
             </Select>
           </div>
+          {mode === "renting" && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground sm:col-span-2">
+              Rental mode removes purchase-only assumptions. Property taxes and HOA dues are not requested unless they are passed through to you as fees or rent add-ons.
+            </div>
+          )}
+          {mode === "relocating" && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground sm:col-span-2">
+              Relocation mode is for comparing where you may live. Use estimated housing cost if you do not yet know whether you will buy or rent.
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="property_category">Property category</Label>
             <Select name="property_category" defaultValue="single_family">
@@ -130,20 +205,29 @@ export function PropertyForm() {
             <Input id="address" name="address" placeholder="123 Maple Street" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="purchase_price">Purchase price</Label>
-            <Input id="purchase_price" name="purchase_price" type="number" min="0" placeholder="450000" />
+            <Label htmlFor="purchase_price">{copy.priceLabel}</Label>
+            <Input id="purchase_price" name="purchase_price" type="number" min="0" placeholder={copy.pricePlaceholder} />
+            <p className="text-xs text-muted-foreground">{copy.priceHelp}</p>
           </div>
+          {mode !== "renting" && (
+            <div className="space-y-2">
+              <Label htmlFor="property_taxes">
+                {mode === "relocating" ? "Estimated annual property taxes if buying" : "Annual property taxes"}
+              </Label>
+              <Input id="property_taxes" name="property_taxes" type="number" min="0" placeholder="6200" />
+            </div>
+          )}
+          {mode !== "renting" && (
+            <div className="space-y-2">
+              <Label htmlFor="hoa_fees">
+                {mode === "relocating" ? "Estimated monthly HOA or community fees" : "Monthly HOA fees"}
+              </Label>
+              <Input id="hoa_fees" name="hoa_fees" type="number" min="0" placeholder="0" />
+            </div>
+          )}
           <div className="space-y-2">
-            <Label htmlFor="property_taxes">Annual property taxes</Label>
-            <Input id="property_taxes" name="property_taxes" type="number" min="0" placeholder="6200" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="hoa_fees">Monthly HOA fees</Label>
-            <Input id="hoa_fees" name="hoa_fees" type="number" min="0" placeholder="0" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="insurance_estimate">Annual insurance estimate</Label>
-            <Input id="insurance_estimate" name="insurance_estimate" type="number" min="0" placeholder="1800" />
+            <Label htmlFor="insurance_estimate">{copy.insuranceLabel}</Label>
+            <Input id="insurance_estimate" name="insurance_estimate" type="number" min="0" placeholder={copy.insurancePlaceholder} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="bedrooms">Bedrooms</Label>
@@ -174,16 +258,25 @@ export function PropertyForm() {
             <Textarea id="property_description" name="property_description" rows={3} />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="buyer_notes">Buyer notes</Label>
-            <Textarea id="buyer_notes" name="buyer_notes" rows={4} placeholder="First impressions, concerns, offer thoughts..." />
+            <Label htmlFor="buyer_notes">{copy.notesLabel}</Label>
+            <Textarea id="buyer_notes" name="buyer_notes" rows={4} placeholder={copy.notesPlaceholder} />
           </div>
+          {mode !== "buying" && (
+            <div className="space-y-2">
+              <Label htmlFor="lease_terms">
+                {mode === "renting" ? "Lease terms" : "Lease or housing terms"}
+              </Label>
+              <Textarea
+                id="lease_terms"
+                name="lease_terms"
+                rows={3}
+                placeholder={mode === "renting" ? "Lease length, deposits, pet rules, utilities, renewal terms..." : "Known lease, HOA, rental, or temporary housing details..."}
+              />
+            </div>
+          )}
           <div className="space-y-2">
-            <Label htmlFor="lease_terms">Lease terms</Label>
-            <Textarea id="lease_terms" name="lease_terms" rows={3} placeholder="Required for rental projects" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="move_timeline">Move timeline</Label>
-            <Textarea id="move_timeline" name="move_timeline" rows={3} placeholder="Offer, lease, inspection, or relocation dates" />
+            <Label htmlFor="move_timeline">{copy.timelineLabel}</Label>
+            <Textarea id="move_timeline" name="move_timeline" rows={3} placeholder={copy.timelinePlaceholder} />
           </div>
         </div>
       </section>
@@ -192,7 +285,7 @@ export function PropertyForm() {
         <div>
           <h2 className="text-lg font-semibold">Property condition</h2>
           <p className="text-sm text-muted-foreground">
-            Rate visible condition now. Unknown is acceptable until inspection.
+            {copy.conditionHelp}
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -235,7 +328,7 @@ export function PropertyForm() {
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold">Future flexibility</h2>
-          <p className="text-sm text-muted-foreground">Score how well the home adapts over time.</p>
+          <p className="text-sm text-muted-foreground">{copy.flexibilityHelp}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {flexibilityFields.map(([name, label]) => (
