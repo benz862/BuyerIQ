@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:apply": "node scripts/apply-supabase-schema.mjs",
+    "db:seed-accounts": "node scripts/seed-demo-accounts.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
