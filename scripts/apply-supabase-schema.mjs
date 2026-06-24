@@ -50,9 +50,26 @@ if (!dbUrl) {
   process.exit(1);
 }
 
-const migration = "supabase/migrations/20260624000000_buyeriq_v2_schema.sql";
-const result = spawnSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-f", migration], {
-  stdio: "inherit",
-});
+const migrations = [
+  "supabase/migrations/20260624000000_buyeriq_v2_schema.sql",
+  "supabase/migrations/20260624010000_complete_existing_schema.sql",
+];
+
+let result;
+for (const migration of migrations) {
+  console.log(`Applying ${migration}`);
+  result = spawnSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-f", migration], {
+    stdio: "inherit",
+  });
+
+  if (result.status === 0) continue;
+
+  if (migration.endsWith("20260624000000_buyeriq_v2_schema.sql")) {
+    console.log("Base migration did not complete; applying compatibility migration.");
+    continue;
+  }
+
+  break;
+}
 
 process.exit(result.status ?? 1);
