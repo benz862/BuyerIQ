@@ -329,6 +329,29 @@ function clampScore(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function priorityAverage(values: Array<PriorityScore | null | undefined>) {
+  return average(values, 0);
+}
+
+function notesMention(text: string | null | undefined, keywords: string[]) {
+  if (!text) return false;
+  const normalized = text.toLowerCase();
+  return keywords.some((keyword) => normalized.includes(keyword));
+}
+
+function inferredLocationScore(
+  explicitScore: number | null | undefined,
+  priority: number,
+  notes: string | null | undefined,
+  keywords: string[]
+) {
+  if (typeof explicitScore === "number") return explicitScore;
+  if (notesMention(notes, keywords)) return 76;
+  if (priority >= 3) return 58;
+  if (priority > 0) return 66;
+  return null;
+}
+
 export function estimateMonthlyCost(property: Property): number | null {
   if (!property.purchase_price) return null;
 
@@ -419,32 +442,23 @@ export function propertyScoreBreakdown(
     : 72;
   const carryingCostPressure = property.hoa_fees && property.hoa_fees > 500 ? 58 : 78;
   const costScore = average([priceFit, paymentFit, carryingCostPressure]);
-
-  const bedroomNeed = buyerProfile?.household_size
-    ? clampScore(((property.bedrooms ?? 0) / Math.max(1, buyerProfile.household_size / 2)) * 65)
-    : 72;
-  const officeFit = buyerProfile?.work_from_home ? property.remote_work_score : 75;
-  const petFit = buyerProfile?.pets ? average([property.parks_score, property.lot_size ? 82 : 60]) : 75;
-  const accessibilityFit = buyerProfile?.accessibility_needs || (futureReadiness?.accessibility_importance ?? 0) >= 3
-    ? property.aging_in_place_score
-    : 75;
-  const healthcarePriority = average([
+  const healthcarePriority = priorityAverage([
     userPriorities?.hospitals,
     userPriorities?.primary_care,
     userPriorities?.specialists,
     userPriorities?.urgent_care,
     userPriorities?.pharmacies,
     userPriorities?.medical_centers,
-  ], 0);
-  const dailyLivingPriority = average([
+  ]);
+  const dailyLivingPriority = priorityAverage([
     userPriorities?.grocery_stores,
     userPriorities?.shopping,
     userPriorities?.banking,
     userPriorities?.restaurants,
     userPriorities?.coffee_shops,
     userPriorities?.veterinarians,
-  ], 0);
-  const recreationPriority = average([
+  ]);
+  const recreationPriority = priorityAverage([
     userPriorities?.golf,
     userPriorities?.pickleball,
     userPriorities?.beaches,
@@ -453,24 +467,69 @@ export function propertyScoreBreakdown(
     userPriorities?.boating,
     userPriorities?.fishing,
     userPriorities?.fitness_centers,
-  ], 0);
-  const transportationPriority = average([
+  ]);
+  const transportationPriority = priorityAverage([
     userPriorities?.public_transportation,
     userPriorities?.walkability,
     userPriorities?.bike_access,
     userPriorities?.airport_access,
     userPriorities?.ride_share,
     userPriorities?.assisted_transportation,
-  ], 0);
-  const healthcareFit = healthcarePriority > 0 ? property.healthcare_score : null;
+  ]);
+  const shoppingScore = inferredLocationScore(
+    property.shopping_score,
+    dailyLivingPriority,
+    property.nearby_amenities,
+    ["grocery", "shopping", "store", "market", "bank", "coffee", "restaurant", "veterinarian", "vet"]
+  );
+  const healthcareScore = inferredLocationScore(
+    property.healthcare_score,
+    healthcarePriority,
+    property.nearby_amenities,
+    ["hospital", "doctor", "physician", "clinic", "urgent care", "pharmacy", "medical", "healthcare"]
+  );
+  const restaurantsScore = inferredLocationScore(
+    property.restaurants_score,
+    dailyLivingPriority,
+    property.nearby_amenities,
+    ["restaurant", "dining", "coffee", "cafe", "bar"]
+  );
+  const parksScore = inferredLocationScore(
+    property.parks_score,
+    recreationPriority,
+    property.nearby_amenities,
+    ["park", "trail", "beach", "golf", "pickleball", "fitness", "gym", "recreation"]
+  );
+  const entertainmentScore = inferredLocationScore(
+    property.entertainment_score,
+    recreationPriority,
+    property.nearby_amenities,
+    ["entertainment", "theater", "cinema", "music", "events", "club", "community center"]
+  );
+  const walkabilityScore = inferredLocationScore(
+    property.walkability_score,
+    transportationPriority,
+    property.nearby_amenities,
+    ["walk", "walkable", "sidewalk", "transit", "bus", "train", "bike", "airport", "rideshare"]
+  );
+
+  const bedroomNeed = buyerProfile?.household_size
+    ? clampScore(((property.bedrooms ?? 0) / Math.max(1, buyerProfile.household_size / 2)) * 65)
+    : 72;
+  const officeFit = buyerProfile?.work_from_home ? property.remote_work_score : 75;
+  const petFit = buyerProfile?.pets ? average([parksScore, property.lot_size ? 82 : 60]) : 75;
+  const accessibilityFit = buyerProfile?.accessibility_needs || (futureReadiness?.accessibility_importance ?? 0) >= 3
+    ? property.aging_in_place_score
+    : 75;
+  const healthcareFit = healthcarePriority > 0 ? healthcareScore : null;
   const dailyLivingFit = dailyLivingPriority > 0
-    ? average([property.shopping_score, property.restaurants_score])
+    ? average([shoppingScore, restaurantsScore])
     : null;
   const recreationFit = recreationPriority > 0
-    ? average([property.parks_score, property.entertainment_score])
+    ? average([parksScore, entertainmentScore])
     : null;
   const transportationFit = transportationPriority > 0 || futureReadiness?.reduce_driving === "yes"
-    ? property.walkability_score
+    ? walkabilityScore
     : null;
   const lifestyleScore = average([
     bedroomNeed,
@@ -495,12 +554,12 @@ export function propertyScoreBreakdown(
   ]);
 
   const locationRisk = average([
-    property.shopping_score,
-    property.healthcare_score,
-    property.restaurants_score,
-    property.parks_score,
-    property.entertainment_score,
-    property.walkability_score,
+    shoppingScore,
+    healthcareScore,
+    restaurantsScore,
+    parksScore,
+    entertainmentScore,
+    walkabilityScore,
   ]);
 
   const baseFutureExpenseRisk = average([

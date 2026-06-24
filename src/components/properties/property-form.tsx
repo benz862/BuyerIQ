@@ -64,7 +64,11 @@ const modeCopy: Record<
     timelineLabel: string;
     timelinePlaceholder: string;
     conditionHelp: string;
+    locationHelp: string;
+    amenitiesLabel: string;
+    amenitiesPlaceholder: string;
     flexibilityHelp: string;
+    showLocationScores: boolean;
   }
 > = {
   buying: {
@@ -79,7 +83,11 @@ const modeCopy: Record<
     timelineLabel: "Offer or move timeline",
     timelinePlaceholder: "Offer date, inspection window, closing target...",
     conditionHelp: "Rate visible condition now. Unknown is acceptable until inspection.",
+    locationHelp: "Add optional due diligence scores when you have researched the address.",
+    amenitiesLabel: "Location research notes",
+    amenitiesPlaceholder: "Grocery stores, schools, commute, parks, medical access, walkability, concerns...",
     flexibilityHelp: "Score how well the home adapts over time.",
+    showLocationScores: true,
   },
   renting: {
     description: "Focus on rent, lease terms, move-in costs, management quality, and day-to-day fit.",
@@ -93,7 +101,11 @@ const modeCopy: Record<
     timelineLabel: "Lease or move-in timeline",
     timelinePlaceholder: "Application deadline, lease start, move-in date...",
     conditionHelp: "Rate visible condition and maintenance concerns before applying or signing.",
+    locationHelp: "BuyerIQ uses your profile priorities to decide which location unknowns matter. Add only what you actually know.",
+    amenitiesLabel: "Known neighborhood notes",
+    amenitiesPlaceholder: "Anything known from the listing, tour, map search, commute check, reviews, or landlord answers...",
     flexibilityHelp: "Score how well the rental supports your lease term, work, pets, and lifestyle.",
+    showLocationScores: false,
   },
   relocating: {
     description: "Compare the address and area against relocation priorities, costs, timing, and future fit.",
@@ -107,7 +119,11 @@ const modeCopy: Record<
     timelineLabel: "Relocation timeline",
     timelinePlaceholder: "Target move date, school calendar, job start, travel dates...",
     conditionHelp: "Use unknown where condition is not yet verified during remote research.",
+    locationHelp: "BuyerIQ weights the address against your relocation priorities and flags important unknowns for follow-up.",
+    amenitiesLabel: "Area research notes",
+    amenitiesPlaceholder: "Known commute details, healthcare access, schools, family proximity, transit, airport, parks, concerns...",
     flexibilityHelp: "Score how well the location and property support your next stage of life.",
+    showLocationScores: false,
   },
 };
 
@@ -311,17 +327,24 @@ export function PropertyForm() {
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold">Location quality</h2>
-          <p className="text-sm text-muted-foreground">Score each factor from 0-100.</p>
+          <h2 className="text-lg font-semibold">Location research</h2>
+          <p className="text-sm text-muted-foreground">{copy.locationHelp}</p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {locationFields.map(([name, label]) => (
-            <ScoreInput key={name} name={name} label={label} />
-          ))}
-        </div>
+        {copy.showLocationScores && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {locationFields.map(([name, label]) => (
+              <ScoreInput key={name} name={name} label={label} />
+            ))}
+          </div>
+        )}
         <div className="space-y-2">
-          <Label htmlFor="nearby_amenities">Nearby amenities</Label>
-          <Textarea id="nearby_amenities" name="nearby_amenities" rows={3} />
+          <Label htmlFor="nearby_amenities">{copy.amenitiesLabel}</Label>
+          <Textarea
+            id="nearby_amenities"
+            name="nearby_amenities"
+            rows={3}
+            placeholder={copy.amenitiesPlaceholder}
+          />
         </div>
       </section>
 
