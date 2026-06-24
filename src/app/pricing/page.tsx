@@ -1,8 +1,5 @@
-import Link from "next/link";
-import { Logo } from "@/components/branding/logo";
 import { PricingCards } from "@/components/pricing/pricing-cards";
 import { SiteHeader } from "@/components/layout/site-header";
-import { Button } from "@/components/ui/button";
 import { getUserProfile } from "@/lib/data/user-profile";
 import type { Plan } from "@/lib/types/plans";
 
@@ -50,18 +47,6 @@ export default async function PricingPage() {
           </div>
         </section>
       </main>
-
-      <footer className="border-t border-border/60 py-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row sm:px-6">
-          <Logo size="sm" />
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/">Home</Link>
-            </Button>
-            <p>© {new Date().getFullYear()} BuyerIQ</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

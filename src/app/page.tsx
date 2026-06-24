@@ -119,17 +119,21 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-16">
+        <section id="how-it-works" className="py-16">
           <div className="mx-auto grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-3">
-            {["Choose mode", "Build project", "Track decisions"].map((title, index) => (
+            {[
+              ["buyer-mode", "Buyer Mode"],
+              ["rental-mode", "Rental Mode"],
+              ["relocation-mode", "Relocation Mode"],
+            ].map(([id, title], index) => (
               <Card key={title}>
-                <CardContent className="space-y-3 pt-6">
+                <CardContent id={id} className="space-y-3 pt-6">
                   <span className="text-sm font-semibold text-primary">Step {index + 1}</span>
                   <h3 className="text-xl font-semibold">{title}</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    {index === 0 && "Start in Buying, Renting, or Relocating mode so the app adapts to the decision."}
-                    {index === 1 && "Add costs, documents, questions, communications, scores, regional risks, and timeline events."}
-                    {index === 2 && "Review completeness, outstanding risks, future expenses, comparisons, and reports."}
+                    {index === 0 && "Evaluate purchase price, ownership costs, property condition, location quality, and long-term fit before making an offer."}
+                    {index === 1 && "Compare lease terms, monthly costs, landlord questions, amenities, commute needs, and move-in risks before signing."}
+                    {index === 2 && "Organize neighborhood research, household priorities, future flexibility, and relocation questions in one decision workspace."}
                   </p>
                 </CardContent>
               </Card>

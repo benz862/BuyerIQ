@@ -11,10 +11,10 @@ export function SiteHeader() {
           <Link href="/pricing" className="transition-colors hover:text-foreground">
             Pricing
           </Link>
-          <Link href="#features" className="transition-colors hover:text-foreground">
+          <Link href="/#features" className="transition-colors hover:text-foreground">
             Features
           </Link>
-          <Link href="#how-it-works" className="transition-colors hover:text-foreground">
+          <Link href="/#how-it-works" className="transition-colors hover:text-foreground">
             How it works
           </Link>
         </nav>

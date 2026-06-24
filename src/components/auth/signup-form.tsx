@@ -77,6 +77,19 @@ export function SignupForm() {
         </Button>
       </form>
 
+      <div className="rounded-xl border border-border/70 bg-card px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+        <p className="font-medium text-foreground">Your information stays within BuyerIQ.</p>
+        <p className="mt-2">
+          BuyerIQ was created to help people make smarter real estate decisions.
+          Your information is used only to personalize your experience and generate
+          recommendations within BuyerIQ.
+        </p>
+        <p className="mt-2">
+          BuyerIQ does not sell personal information to advertisers, brokers, agents,
+          landlords, property managers, or third parties.
+        </p>
+      </div>
+
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/login" className="font-medium text-primary hover:underline">
