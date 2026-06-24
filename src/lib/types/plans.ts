@@ -26,7 +26,7 @@ export const PLAN_LABELS: Record<Plan, string> = {
 };
 
 export const PLAN_PRICES: Record<Exclude<Plan, "free">, number> = {
-  standard: 99,
+  standard: 79,
   pro: 149,
 };
 
