@@ -459,7 +459,11 @@ export async function saveBuyerProfile(formData: FormData) {
     return Math.max(0, Math.min(4, Math.round(value)));
   };
 
-  await supabase.from("buyer_profiles").upsert({
+  const redirectWithError = (message: string) => {
+    redirect(`/dashboard/profile?error=${encodeURIComponent(message)}`);
+  };
+
+  const buyerResult = await supabase.from("buyer_profiles").upsert({
     user_id: user.id,
     name: parseText("name"),
     budget: parseNumber("budget"),
@@ -475,8 +479,9 @@ export async function saveBuyerProfile(formData: FormData) {
     nice_to_have_features: parseText("nice_to_have_features"),
     deal_breakers: parseText("deal_breakers"),
   }, { onConflict: "user_id" });
+  if (buyerResult.error) redirectWithError(buyerResult.error.message);
 
-  await supabase.from("lifestyle_profiles").upsert({
+  const lifestyleResult = await supabase.from("lifestyle_profiles").upsert({
     user_id: user.id,
     life_stage: parseText("life_stage"),
     age_range: parseText("age_range"),
@@ -485,16 +490,18 @@ export async function saveBuyerProfile(formData: FormData) {
     pet_ownership: parseBool("pets"),
     work_from_home: parseBool("work_from_home"),
   }, { onConflict: "user_id" });
+  if (lifestyleResult.error) redirectWithError(lifestyleResult.error.message);
 
-  await supabase.from("future_readiness_profiles").upsert({
+  const readinessResult = await supabase.from("future_readiness_profiles").upsert({
     user_id: user.id,
     reduce_driving: parseText("reduce_driving"),
     accessibility_importance: parsePriority("accessibility_importance"),
     maintenance_tolerance: parseText("maintenance_tolerance"),
     stair_tolerance: parseText("stair_tolerance"),
   }, { onConflict: "user_id" });
+  if (readinessResult.error) redirectWithError(readinessResult.error.message);
 
-  await supabase.from("user_priorities").upsert({
+  const prioritiesResult = await supabase.from("user_priorities").upsert({
     user_id: user.id,
     hospitals: parsePriority("hospitals"),
     primary_care: parsePriority("primary_care"),
@@ -533,9 +540,11 @@ export async function saveBuyerProfile(formData: FormData) {
     ride_share: parsePriority("ride_share"),
     assisted_transportation: parsePriority("assisted_transportation"),
   }, { onConflict: "user_id" });
+  if (prioritiesResult.error) redirectWithError(prioritiesResult.error.message);
 
   revalidatePath("/dashboard/profile");
   revalidatePath("/dashboard");
+  redirect("/dashboard/profile?saved=1");
 }
 
 export async function signOut() {

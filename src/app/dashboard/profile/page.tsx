@@ -133,7 +133,12 @@ function PrioritySelect({
   );
 }
 
-export default async function BuyerProfilePage() {
+export default async function BuyerProfilePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ saved?: string; error?: string }>;
+}) {
+  const params = searchParams ? await searchParams : {};
   const profile = await getUserProfile();
   let buyerProfile: BuyerProfile | null = null;
   let lifestyleProfile: LifestyleProfile | null = null;
@@ -167,6 +172,17 @@ export default async function BuyerProfilePage() {
       </div>
 
       <PrivacyCommitment />
+
+      {params.saved && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+          Priorities saved.
+        </div>
+      )}
+      {params.error && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {params.error}
+        </div>
+      )}
 
       <form action={saveBuyerProfile} className="space-y-6">
         <Card>
