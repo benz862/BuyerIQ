@@ -326,6 +326,114 @@ export async function deleteProperty(propertyId: string) {
   redirect("/dashboard/properties");
 }
 
+async function requireOwnedProperty(propertyId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: property } = await supabase
+    .from("properties")
+    .select("id")
+    .eq("id", propertyId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!property) {
+    throw new Error("Property not found.");
+  }
+
+  return { supabase, user };
+}
+
+export async function savePropertyPhoto(formData: FormData) {
+  const propertyId = formData.get("property_id")?.toString();
+  const storagePath = formData.get("storage_path")?.toString();
+
+  if (!propertyId || !storagePath) {
+    return { error: "Missing property or uploaded photo." };
+  }
+
+  const { supabase, user } = await requireOwnedProperty(propertyId);
+  const caption = formData.get("caption")?.toString().trim() || null;
+  const category = formData.get("category")?.toString().trim() || "Property";
+  const concernLevel = formData.get("concern_level")?.toString().trim() || null;
+  const concernTags = formData
+    .get("concern_tags")
+    ?.toString()
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const { error } = await supabase.from("property_photos").insert({
+    property_id: propertyId,
+    user_id: user.id,
+    storage_path: storagePath,
+    category,
+    caption,
+    concern_level: concernLevel,
+    concern_tags: concernTags?.length ? concernTags : null,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase.from("timeline_events").insert({
+    user_id: user.id,
+    property_id: propertyId,
+    event_type: "photo_uploaded",
+    title: "Photo uploaded",
+    notes: caption || category,
+  });
+
+  revalidatePath(`/dashboard/properties/${propertyId}`);
+  return { success: true };
+}
+
+export async function savePropertyContact(formData: FormData) {
+  const propertyId = formData.get("property_id")?.toString();
+  const name = formData.get("name")?.toString().trim();
+
+  if (!propertyId || !name) {
+    return { error: "Contact name is required." };
+  }
+
+  const { supabase, user } = await requireOwnedProperty(propertyId);
+
+  const { error } = await supabase.from("property_contacts").insert({
+    property_id: propertyId,
+    user_id: user.id,
+    contact_type: formData.get("contact_type")?.toString().trim() || "realtor",
+    name,
+    company: formData.get("company")?.toString().trim() || null,
+    role: formData.get("role")?.toString().trim() || null,
+    email: formData.get("email")?.toString().trim() || null,
+    phone: formData.get("phone")?.toString().trim() || null,
+    photo_storage_path: formData.get("photo_storage_path")?.toString().trim() || null,
+    notes: formData.get("notes")?.toString().trim() || null,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase.from("timeline_events").insert({
+    user_id: user.id,
+    property_id: propertyId,
+    event_type: "contact_added",
+    title: "Contact added",
+    notes: name,
+  });
+
+  revalidatePath(`/dashboard/properties/${propertyId}`);
+  return { success: true };
+}
+
 export async function saveBuyerProfile(formData: FormData) {
   const supabase = await createClient();
   const {

@@ -8,6 +8,7 @@ const ALLOWED_BUCKETS = new Set([
   "hoa-documents",
   "inspection-documents",
   "reports",
+  "contact-photos",
 ]);
 
 export async function POST(request: Request) {
@@ -28,7 +29,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid bucket or file name." }, { status: 400 });
   }
 
-  const path = `${user.id}/${crypto.randomUUID()}-${fileName}`;
+  const propertyId =
+    typeof body?.property_id === "string"
+      ? body.property_id.replace(/[^a-zA-Z0-9_-]/g, "")
+      : "";
+  const path = `${user.id}/${propertyId ? `${propertyId}/` : ""}${crypto.randomUUID()}-${fileName}`;
   const { data, error } = await supabase.storage.from(bucket).createSignedUploadUrl(path);
 
   if (error) {

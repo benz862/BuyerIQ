@@ -183,6 +183,34 @@ export type TimelineEvent = {
   created_at: string;
 };
 
+export type PropertyPhoto = {
+  id: string;
+  property_id: string;
+  user_id: string;
+  storage_path: string;
+  category: string | null;
+  caption: string | null;
+  concern_level: string | null;
+  concern_tags: string[] | null;
+  created_at: string;
+};
+
+export type PropertyContact = {
+  id: string;
+  user_id: string;
+  property_id: string;
+  contact_type: string;
+  name: string;
+  company: string | null;
+  role: string | null;
+  email: string | null;
+  phone: string | null;
+  photo_storage_path: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ScoreBreakdown = {
   propertyFitScore: number;
   riskScore: number;

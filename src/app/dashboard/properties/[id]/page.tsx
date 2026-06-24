@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, ImageIcon, Mail, Phone, Trash2, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { PropertyContactForm, PropertyPhotoUploader } from "@/components/properties/property-media-manager";
 import { createQuestion, deleteProperty, sendQuestionEmail } from "@/lib/actions/properties";
 import { getUserProfile } from "@/lib/data/user-profile";
 import { createClient } from "@/lib/supabase/server";
@@ -25,6 +27,8 @@ import {
   type BuyerProfile,
   type FutureReadinessProfile,
   type Property,
+  type PropertyContact,
+  type PropertyPhoto,
   type PropertyQuestion,
   type TimelineEvent,
   type UserPriorities,
@@ -63,6 +67,16 @@ function InsightList({ title, items }: { title: string; items: string[] }) {
       </ul>
     </div>
   );
+}
+
+async function signedUrl(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  bucket: string,
+  path: string | null
+) {
+  if (!path) return null;
+  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10);
+  return data?.signedUrl ?? null;
 }
 
 export default async function PropertyDetailPage({
@@ -112,6 +126,18 @@ export default async function PropertyDetailPage({
     .select("*")
     .eq("property_id", id)
     .order("occurred_at", { ascending: false });
+  const { data: photos } = await supabase
+    .from("property_photos")
+    .select("*")
+    .eq("property_id", id)
+    .eq("user_id", user?.id ?? "")
+    .order("created_at", { ascending: false });
+  const { data: contacts } = await supabase
+    .from("property_contacts")
+    .select("*")
+    .eq("property_id", id)
+    .eq("user_id", user?.id ?? "")
+    .order("created_at", { ascending: false });
 
   if (!property) {
     notFound();
@@ -123,6 +149,20 @@ export default async function PropertyDetailPage({
   const typedReadiness = futureReadiness as FutureReadinessProfile | null;
   const typedQuestions = (questions ?? []) as PropertyQuestion[];
   const typedTimeline = (timeline ?? []) as TimelineEvent[];
+  const typedPhotos = (photos ?? []) as PropertyPhoto[];
+  const typedContacts = (contacts ?? []) as PropertyContact[];
+  const photoViews = await Promise.all(
+    typedPhotos.map(async (photo) => ({
+      ...photo,
+      signedUrl: await signedUrl(supabase, "property-photos", photo.storage_path),
+    }))
+  );
+  const contactViews = await Promise.all(
+    typedContacts.map(async (contact) => ({
+      ...contact,
+      signedUrl: await signedUrl(supabase, "contact-photos", contact.photo_storage_path),
+    }))
+  );
   const scores = propertyScoreBreakdown(typedProperty, typedBuyerProfile, typedPriorities, typedReadiness);
   const completeness = informationCompletenessScore(typedProperty);
   const monthlyCost = estimateMonthlyCost(typedProperty);
@@ -207,6 +247,8 @@ export default async function PropertyDetailPage({
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="questions">Questions</TabsTrigger>
           <TabsTrigger value="regional">Regional</TabsTrigger>
+          <TabsTrigger value="photos">Photos</TabsTrigger>
+          <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="condition">Condition</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
@@ -311,6 +353,106 @@ export default async function PropertyDetailPage({
         <TabsContent value="regional" className="grid gap-4 lg:grid-cols-2">
           <InsightList title={`${REGION_LABELS[typedProperty.region_key]} intelligence`} items={insights.regionalRisks} />
           <InsightList title="Questions to ask" items={insights.questionsToAsk} />
+        </TabsContent>
+
+        <TabsContent value="photos" className="grid gap-4 lg:grid-cols-[1fr_360px]">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="size-5 text-primary" />
+                Property photos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {photoViews.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No photos saved yet. Take or upload photos for this address to keep visual due diligence with the property.
+                </p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {photoViews.map((photo) => (
+                    <div key={photo.id} className="overflow-hidden rounded-xl border border-border/70 bg-card">
+                      {photo.signedUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={photo.signedUrl} alt={photo.caption ?? photo.category ?? "Property photo"} className="aspect-[4/3] w-full object-cover" />
+                      ) : (
+                        <div className="flex aspect-[4/3] items-center justify-center bg-muted text-muted-foreground">
+                          <ImageIcon className="size-8" />
+                        </div>
+                      )}
+                      <div className="space-y-2 p-3 text-sm">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {photo.category && <Badge variant="secondary">{photo.category}</Badge>}
+                          {photo.concern_level && photo.concern_level !== "none" && (
+                            <Badge variant="outline">{photo.concern_level.replace("_", " ")}</Badge>
+                          )}
+                        </div>
+                        {photo.caption && <p className="text-muted-foreground">{photo.caption}</p>}
+                        {photo.concern_tags?.length ? (
+                          <p className="text-xs text-muted-foreground">{photo.concern_tags.join(", ")}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <PropertyPhotoUploader propertyId={typedProperty.id} />
+        </TabsContent>
+
+        <TabsContent value="contacts" className="grid gap-4 lg:grid-cols-[1fr_380px]">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserRound className="size-5 text-primary" />
+                Realtors and contacts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contactViews.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No contacts saved yet. Add realtors, inspectors, landlords, or property managers connected to this property.
+                </p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {contactViews.map((contact) => (
+                    <div key={contact.id} className="rounded-xl border border-border/70 p-4">
+                      <div className="flex items-start gap-3">
+                        <Avatar size="lg">
+                          {contact.signedUrl && <AvatarImage src={contact.signedUrl} alt={contact.name} />}
+                          <AvatarFallback>{contact.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="font-medium">{contact.name}</p>
+                          <p className="text-sm capitalize text-muted-foreground">
+                            {contact.role || contact.contact_type.replaceAll("_", " ")}
+                          </p>
+                          {contact.company && <p className="text-sm text-muted-foreground">{contact.company}</p>}
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+                        {contact.email && (
+                          <p className="flex items-center gap-2">
+                            <Mail className="size-4" />
+                            <a href={`mailto:${contact.email}`} className="hover:text-foreground">{contact.email}</a>
+                          </p>
+                        )}
+                        {contact.phone && (
+                          <p className="flex items-center gap-2">
+                            <Phone className="size-4" />
+                            <a href={`tel:${contact.phone}`} className="hover:text-foreground">{contact.phone}</a>
+                          </p>
+                        )}
+                        {contact.notes && <p>{contact.notes}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <PropertyContactForm propertyId={typedProperty.id} />
         </TabsContent>
 
         <TabsContent value="condition" className="grid gap-4 lg:grid-cols-2">
