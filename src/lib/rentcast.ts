@@ -29,6 +29,13 @@ function toString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() !== "" ? value : undefined;
 }
 
+function toRentCastRange(min?: number, max?: number): string | undefined {
+  if (min === undefined && max === undefined) return undefined;
+  if (min !== undefined && max !== undefined) return `${min}:${max}`;
+  if (min !== undefined) return `${min}:`;
+  return `:${max}`;
+}
+
 function normalizeRentCastListing(
   raw: RentCastListing,
   listingType: PropertyListingType
@@ -115,8 +122,9 @@ export async function searchRentCastListings(params: {
   if (params.latitude !== undefined) query.set("latitude", String(params.latitude));
   if (params.longitude !== undefined) query.set("longitude", String(params.longitude));
   if (params.radius !== undefined) query.set("radius", String(params.radius));
-  if (params.minPrice !== undefined) query.set("minPrice", String(params.minPrice));
-  if (params.maxPrice !== undefined) query.set("maxPrice", String(params.maxPrice));
+  query.set("status", "Active");
+  const priceRange = toRentCastRange(params.minPrice, params.maxPrice);
+  if (priceRange) query.set("price", priceRange);
   if (params.bedrooms !== undefined) query.set("bedrooms", String(params.bedrooms));
   if (params.bathrooms !== undefined) query.set("bathrooms", String(params.bathrooms));
   query.set("limit", String(params.limit ?? 50));

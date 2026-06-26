@@ -59,6 +59,10 @@ export default function PropertiesPage() {
     setSearch((current) => ({ ...current, [key]: value }));
   }
 
+  const priceLabel = search.listingType === "rent" ? "Monthly rent" : "Purchase price";
+  const minPricePlaceholder = search.listingType === "rent" ? "1800" : "300000";
+  const maxPricePlaceholder = search.listingType === "rent" ? "3500" : "650000";
+
   async function runSearch() {
     setIsLoading(true);
     setErrorMessage("");
@@ -74,19 +78,23 @@ export default function PropertiesPage() {
       params.set("limit", "50");
 
       const response = await fetch(`/api/properties/search?${params.toString()}`);
+      const data = (await response.json()) as { properties?: BuyerIQProperty[]; error?: string };
 
       if (!response.ok) {
-        throw new Error("Property search failed.");
+        throw new Error(data.error ?? "Property search failed.");
       }
 
-      const data = (await response.json()) as { properties?: BuyerIQProperty[] };
       const nextProperties = data.properties ?? [];
 
       setProperties(nextProperties);
       setSelectedProperty(nextProperties[0] ?? null);
     } catch (error) {
       console.error(error);
-      setErrorMessage("Unable to load listings. Check RentCast API settings and search filters.");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to load listings. Check RentCast API settings and search filters."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -170,24 +178,24 @@ export default function PropertiesPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="property-min-price">Min price</Label>
+              <Label htmlFor="property-min-price">Min {priceLabel}</Label>
               <Input
                 id="property-min-price"
                 inputMode="numeric"
                 value={search.minPrice}
                 onChange={(event) => updateSearch("minPrice", event.target.value)}
-                placeholder="300000"
+                placeholder={minPricePlaceholder}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="property-max-price">Max price</Label>
+              <Label htmlFor="property-max-price">Max {priceLabel}</Label>
               <Input
                 id="property-max-price"
                 inputMode="numeric"
                 value={search.maxPrice}
                 onChange={(event) => updateSearch("maxPrice", event.target.value)}
-                placeholder="650000"
+                placeholder={maxPricePlaceholder}
               />
             </div>
 
