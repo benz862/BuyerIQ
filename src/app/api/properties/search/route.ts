@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       zipCode: searchParams.get("zipCode") || undefined,
       latitude: optionalNumber(searchParams.get("latitude")),
       longitude: optionalNumber(searchParams.get("longitude")),
-      radius: optionalNumber(searchParams.get("radius")) ?? 15,
+      radius: optionalNumber(searchParams.get("radius")),
       minPrice: optionalNumber(searchParams.get("minPrice")),
       maxPrice: optionalNumber(searchParams.get("maxPrice")),
       bedrooms: optionalNumber(searchParams.get("bedrooms")),
