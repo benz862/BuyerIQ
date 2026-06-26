@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchRentCastListings } from "@/lib/rentcast";
+import { RentCastRequestError, searchRentCastListings } from "@/lib/rentcast";
 import type { PropertyListingType } from "@/types/property";
 
 function optionalNumber(value: string | null): number | undefined {
@@ -39,10 +39,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ properties });
   } catch (error) {
     console.error(error);
-    const message =
-      error instanceof Error && error.message.includes("Missing RENTCAST_API_KEY")
-        ? "RentCast API key is not configured."
-        : "Unable to search properties.";
+    const message = (() => {
+      if (error instanceof Error && error.message.includes("Missing RENTCAST_API_KEY")) {
+        return "RentCast API key is not configured.";
+      }
+
+      if (error instanceof RentCastRequestError) {
+        return error.message;
+      }
+
+      return "Unable to search properties.";
+    })();
 
     return NextResponse.json(
       { error: message },

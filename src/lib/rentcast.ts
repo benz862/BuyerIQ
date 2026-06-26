@@ -4,6 +4,16 @@ const RENTCAST_BASE_URL = "https://api.rentcast.io/v1";
 
 type RentCastListing = Record<string, unknown>;
 
+export class RentCastRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message);
+    this.name = "RentCastRequestError";
+  }
+}
+
 function requireRentCastKey() {
   const key = process.env.RENTCAST_API_KEY;
 
@@ -139,7 +149,10 @@ export async function searchRentCastListings(params: {
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(`RentCast request failed: ${response.status} ${message}`);
+    throw new RentCastRequestError(
+      `RentCast request failed with ${response.status}: ${message.slice(0, 240)}`,
+      response.status
+    );
   }
 
   const data: unknown = await response.json();
