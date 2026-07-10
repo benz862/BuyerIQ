@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RentCastRequestError, searchRentCastListings } from "@/lib/rentcast";
-import type { PropertyListingType } from "@/types/property";
+import type { PropertyListingType, PropertySearchType } from "@/types/property";
+
+const propertyTypes: PropertySearchType[] = [
+  "all",
+  "Single Family",
+  "Condo",
+  "Townhouse",
+  "Apartment",
+  "Manufactured",
+  "Multi-Family",
+];
 
 function optionalNumber(value: string | null): number | undefined {
   if (!value) return undefined;
@@ -13,12 +23,17 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const listingType = (searchParams.get("listingType") || "sale") as PropertyListingType;
+    const propertyType = (searchParams.get("propertyType") || "all") as PropertySearchType;
 
     if (!["sale", "rent"].includes(listingType)) {
       return NextResponse.json(
         { error: "listingType must be sale or rent." },
         { status: 400 }
       );
+    }
+
+    if (!propertyTypes.includes(propertyType)) {
+      return NextResponse.json({ error: "Unsupported property type." }, { status: 400 });
     }
 
     const properties = await searchRentCastListings({
@@ -33,6 +48,7 @@ export async function GET(request: NextRequest) {
       maxPrice: optionalNumber(searchParams.get("maxPrice")),
       bedrooms: optionalNumber(searchParams.get("bedrooms")),
       bathrooms: optionalNumber(searchParams.get("bathrooms")),
+      propertyType: propertyType === "all" ? undefined : propertyType,
       limit: optionalNumber(searchParams.get("limit")) ?? 50,
     });
 
