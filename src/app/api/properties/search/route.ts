@@ -19,6 +19,23 @@ function optionalNumber(value: string | null): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function normalizeCity(value: string | null): string | undefined {
+  const city = value?.trim();
+  if (!city) return undefined;
+
+  return city
+    .split(/(\s+|-)/)
+    .map((part) => {
+      if (!/[a-z]/i.test(part) || /[A-Z].*[A-Z]/.test(part)) return part;
+      return `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`;
+    })
+    .join("");
+}
+
+function normalizeState(value: string | null): string | undefined {
+  return value?.trim().toUpperCase() || undefined;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -38,9 +55,9 @@ export async function GET(request: NextRequest) {
 
     const properties = await searchRentCastListings({
       listingType,
-      city: searchParams.get("city") || undefined,
-      state: searchParams.get("state") || undefined,
-      zipCode: searchParams.get("zipCode") || undefined,
+      city: normalizeCity(searchParams.get("city")),
+      state: normalizeState(searchParams.get("state")),
+      zipCode: searchParams.get("zipCode")?.trim() || undefined,
       latitude: optionalNumber(searchParams.get("latitude")),
       longitude: optionalNumber(searchParams.get("longitude")),
       radius: optionalNumber(searchParams.get("radius")),
