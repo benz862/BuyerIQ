@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookmarkPlus, Building2, Check, Search } from "lucide-react";
+import { BookmarkPlus, Check, Search } from "lucide-react";
 import { PropertySearchMap } from "@/components/property/PropertySearchMap";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,33 +51,6 @@ function formatPrice(property: BuyerIQProperty) {
   return property.listingType === "rent"
     ? `$${property.price.toLocaleString()}/mo`
     : `$${property.price.toLocaleString()}`;
-}
-
-function ListingImage({ property, className }: { property: BuyerIQProperty; className: string }) {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const photoUrl = property.photos[0];
-  const showPhoto = Boolean(photoUrl && failedUrl !== photoUrl);
-
-  return (
-    <div className={`relative overflow-hidden bg-muted ${className}`}>
-      {showPhoto ? (
-        // Listing image hosts vary, so they cannot use a fixed Next.js remote-image allowlist.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={photoUrl}
-          alt={`Listing preview for ${property.address}`}
-          className="h-full w-full object-cover"
-          loading="lazy"
-          onError={() => setFailedUrl(photoUrl)}
-        />
-      ) : (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-          <Building2 className="size-8" aria-hidden="true" />
-          <span className="px-2 text-center text-xs">Photo unavailable</span>
-        </div>
-      )}
-    </div>
-  );
 }
 
 export function PropertySearchAdd() {
@@ -316,22 +289,16 @@ export function PropertySearchAdd() {
               <div className="sticky top-0 z-10 space-y-3 border-b bg-card pb-3">
                 {selectedProperty ? (
                   <div className="rounded-xl border border-primary bg-primary/5 p-3">
-                    <div className="flex gap-3">
-                      <ListingImage
-                        property={selectedProperty}
-                        className="h-24 w-28 shrink-0 rounded-lg"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-primary">
-                          <Check className="size-3.5" /> Selected
-                        </div>
-                        <div className="mt-1 font-semibold leading-snug">
-                          {selectedProperty.address}
-                        </div>
-                        <div className="mt-1 text-sm">{formatPrice(selectedProperty)}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {selectedProperty.propertyType ?? "Property"} · {selectedProperty.bedrooms ?? "-"} bed · {selectedProperty.bathrooms ?? "-"} bath
-                        </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                        <Check className="size-3.5" /> Selected
+                      </div>
+                      <div className="mt-1 font-semibold leading-snug">
+                        {selectedProperty.address}
+                      </div>
+                      <div className="mt-1 text-sm">{formatPrice(selectedProperty)}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {selectedProperty.propertyType ?? "Property"} · {selectedProperty.bedrooms ?? "-"} bed · {selectedProperty.bathrooms ?? "-"} bath
                       </div>
                     </div>
                   </div>
@@ -368,18 +335,13 @@ export function PropertySearchAdd() {
                   selectedProperty?.id === property.id ? "border-primary bg-muted/40" : "border-border"
                 }`}
               >
-                <div className="flex gap-3">
-                  <ListingImage property={property} className="h-24 w-28 shrink-0 rounded-lg" />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium leading-snug">{property.address}</div>
-                    <div className="mt-1 text-sm">{formatPrice(property)}</div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      {property.bedrooms ?? "-"} bed · {property.bathrooms ?? "-"} bath ·{" "}
-                      {property.squareFeet
-                        ? `${property.squareFeet.toLocaleString()} sq ft`
-                        : "sq ft unavailable"}
-                    </div>
-                  </div>
+                <div className="font-medium leading-snug">{property.address}</div>
+                <div className="mt-1 text-sm">{formatPrice(property)}</div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {property.bedrooms ?? "-"} bed · {property.bathrooms ?? "-"} bath ·{" "}
+                  {property.squareFeet
+                    ? `${property.squareFeet.toLocaleString()} sq ft`
+                    : "sq ft unavailable"}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Badge variant="secondary">
