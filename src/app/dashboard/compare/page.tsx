@@ -189,6 +189,8 @@ export default async function ComparePage() {
               ["Lanai", (item: typeof ranked[number]) => item.property.has_lanai === null ? "Unknown" : item.property.has_lanai ? "Yes" : "No"],
               ["Flooring", (item: typeof ranked[number]) => item.property.flooring_type === "hard_surface" ? "No carpet / hard surface" : item.property.flooring_type === "mixed" ? "Mixed flooring" : item.property.flooring_type === "carpet" ? "Carpet" : "Unknown"],
               ["Garage spaces", (item: typeof ranked[number]) => item.property.garage_spaces?.toString() ?? "Unknown"],
+              ["FEMA flood zone", (item: typeof ranked[number]) => item.property.fema_flood_status === "mapped" ? `Zone ${item.property.fema_flood_zone ?? "unknown"} · ${item.property.fema_flood_risk_level ?? "undetermined"} mapped risk` : item.property.fema_flood_status === "not_mapped" ? "No mapped hazard polygon" : "Not researched"],
+              ["FEMA Special Flood Hazard Area", (item: typeof ranked[number]) => item.property.fema_sfha === null ? "Unknown" : item.property.fema_sfha ? "Yes" : "No"],
               ["Monthly costs", (item: typeof ranked[number]) => formatCurrency(estimateMonthlyCost(item.property))],
               ["Risk factors", (item: typeof ranked[number]) => supportedScore(item.scores.riskScore, hasConditionEvidence(item.property), "condition ratings")],
               ["Cost Score", (item: typeof ranked[number]) => supportedScore(item.scores.costScore, hasCostEvidence(item.property, typedBuyerProfile), "a budget target")],

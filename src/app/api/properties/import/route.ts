@@ -4,6 +4,7 @@ import { getUserProfile } from "@/lib/data/user-profile";
 import { PLAN_PROPERTY_LIMITS } from "@/lib/types/plans";
 import type { BuyerIQProperty } from "@/types/property";
 import type { PropertyCategory } from "@/lib/types/database";
+import { femaResultColumns, lookupFemaFloodZone } from "@/lib/fema";
 
 function mapPropertyCategory(property: BuyerIQProperty): PropertyCategory {
   const type = property.propertyType?.toLowerCase() ?? "";
@@ -79,6 +80,8 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join("\n");
 
+    const femaFlood = await lookupFemaFloodZone(property.latitude, property.longitude);
+
     const { data, error } = await supabase
       .from("properties")
       .insert({
@@ -99,6 +102,9 @@ export async function POST(request: NextRequest) {
         buyer_notes: importedNotes || null,
         nearby_amenities: [property.city, property.state, property.zipCode].filter(Boolean).join(", ") || null,
         lease_terms: property.listingType === "rent" ? "Imported rental listing" : null,
+        latitude: property.latitude,
+        longitude: property.longitude,
+        ...femaResultColumns(femaFlood),
       })
       .select("id")
       .single();

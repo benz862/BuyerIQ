@@ -6,11 +6,41 @@ import { getUserProfile } from "@/lib/data/user-profile";
 import { createClient } from "@/lib/supabase/server";
 import { PLAN_PROPERTY_LIMITS } from "@/lib/types/plans";
 import type { ConditionRating, ProjectMode, PropertyCategory, QuestionStatus, RegionKey } from "@/lib/types/database";
+import { femaResultColumns, geocodeAddress, lookupFemaFloodZone } from "@/lib/fema";
 
 export type PropertyFormState = {
   error?: string;
   success?: boolean;
 };
+
+export async function refreshFemaFloodData(propertyId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: property } = await supabase
+    .from("properties")
+    .select("address, latitude, longitude")
+    .eq("id", propertyId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!property) return;
+  const coordinates = property.latitude !== null && property.longitude !== null
+    ? { latitude: Number(property.latitude), longitude: Number(property.longitude) }
+    : await geocodeAddress(property.address);
+  if (!coordinates) return;
+  const result = await lookupFemaFloodZone(coordinates.latitude, coordinates.longitude);
+  const { error } = await supabase
+    .from("properties")
+    .update({ ...coordinates, ...femaResultColumns(result) })
+    .eq("id", propertyId)
+    .eq("user_id", user.id);
+  if (error) throw error;
+
+  revalidatePath(`/dashboard/properties/${propertyId}`);
+  revalidatePath("/dashboard/compare");
+}
 
 export async function createProperty(
   _prevState: PropertyFormState,
