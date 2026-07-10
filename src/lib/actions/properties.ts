@@ -164,6 +164,87 @@ export async function createProperty(
   redirect(`/dashboard/properties/${data.id}`);
 }
 
+export async function updateProperty(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const propertyId = formData.get("property_id")?.toString();
+  if (!propertyId) throw new Error("Property ID is required.");
+
+  const parseNumber = (key: string) => {
+    const value = formData.get(key)?.toString().trim();
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const parseScore = (key: string) => {
+    const value = parseNumber(key);
+    return value === null ? null : Math.min(100, Math.max(0, Math.round(value)));
+  };
+  const parseCondition = (key: string): ConditionRating => {
+    const value = formData.get(key)?.toString();
+    return value === "excellent" || value === "good" || value === "average" || value === "poor"
+      ? value
+      : "unknown";
+  };
+  const text = (key: string) => formData.get(key)?.toString().trim() || null;
+
+  const { error } = await supabase
+    .from("properties")
+    .update({
+      property_name: text("property_name"),
+      address: text("address"),
+      purchase_price: parseNumber("purchase_price"),
+      property_taxes: parseNumber("property_taxes"),
+      hoa_fees: parseNumber("hoa_fees"),
+      insurance_estimate: parseNumber("insurance_estimate"),
+      bedrooms: parseNumber("bedrooms"),
+      bathrooms: parseNumber("bathrooms"),
+      square_footage: parseNumber("square_footage"),
+      lot_size: text("lot_size"),
+      year_built: parseNumber("year_built"),
+      garage_spaces: parseNumber("garage_spaces"),
+      property_description: text("property_description"),
+      buyer_notes: text("buyer_notes"),
+      nearby_amenities: text("nearby_amenities"),
+      shopping_score: parseScore("shopping_score"),
+      healthcare_score: parseScore("healthcare_score"),
+      restaurants_score: parseScore("restaurants_score"),
+      parks_score: parseScore("parks_score"),
+      entertainment_score: parseScore("entertainment_score"),
+      walkability_score: parseScore("walkability_score"),
+      growing_family_score: parseScore("growing_family_score"),
+      retirement_score: parseScore("retirement_score"),
+      aging_in_place_score: parseScore("aging_in_place_score"),
+      resale_potential_score: parseScore("resale_potential_score"),
+      remote_work_score: parseScore("remote_work_score"),
+      roof_condition: parseCondition("roof_condition"),
+      hvac_condition: parseCondition("hvac_condition"),
+      foundation_condition: parseCondition("foundation_condition"),
+      kitchen_condition: parseCondition("kitchen_condition"),
+      bathrooms_condition: parseCondition("bathrooms_condition"),
+      flooring_condition: parseCondition("flooring_condition"),
+      windows_condition: parseCondition("windows_condition"),
+      exterior_condition: parseCondition("exterior_condition"),
+      lease_terms: text("lease_terms"),
+      move_timeline: text("move_timeline"),
+    })
+    .eq("id", propertyId)
+    .eq("user_id", user.id);
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/properties");
+  revalidatePath(`/dashboard/properties/${propertyId}`);
+  revalidatePath("/dashboard/compare");
+  redirect(`/dashboard/properties/${propertyId}`);
+}
+
 export async function createQuestion(formData: FormData) {
   const supabase = await createClient();
   const {
