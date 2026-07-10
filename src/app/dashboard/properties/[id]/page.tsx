@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, ImageIcon, Mail, Phone, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, Download, ImageIcon, Mail, Pencil, Phone, Trash2, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -190,6 +190,12 @@ export default async function PropertyDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/properties/${typedProperty.id}/edit`}>
+              <Pencil className="size-4" />
+              Edit property information
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="#report">
               <Download className="size-4" />
