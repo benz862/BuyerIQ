@@ -1,6 +1,7 @@
 import { Scale, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScoreBar } from "@/components/ui/score-bar";
 import { getUserProfile } from "@/lib/data/user-profile";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -85,6 +86,7 @@ export default async function ComparePage() {
               <p className="text-sm text-muted-foreground">
                 BuyerIQ Score {best.scores.overall}/100 · {recommendationForScore(best.scores.overall)}
               </p>
+              <ScoreBar value={best.scores.overall} className="mt-3 w-full sm:w-96" label="Top comparison score" />
               {leaders.some((item) => item.scores.confidenceScore < 70) && (
                 <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
                   Preliminary result: more property details are needed to make a confident distinction.
@@ -157,6 +159,7 @@ export default async function ComparePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <ScoreBar value={scores.overall} label={`${property.property_name} BuyerIQ score`} />
               <p>
                 <span className="font-medium text-foreground">Highlights:</span>{" "}
                 {highlights.length > 0 ? highlights.join(" · ") : "No clear quantitative advantage yet."}

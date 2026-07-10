@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { ScoreBar } from "@/components/ui/score-bar";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -211,7 +212,7 @@ export default async function PropertyDetailPage({
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-semibold text-primary">{scores.propertyFitScore}</div>
-            <Progress value={scores.propertyFitScore} className="mt-3 h-2" />
+            <ScoreBar value={scores.propertyFitScore} className="mt-3" label="Property fit score" />
           </CardContent>
         </Card>
         <Card>
