@@ -54,6 +54,7 @@ const migrations = [
   "supabase/migrations/20260624000000_buyeriq_v2_schema.sql",
   "supabase/migrations/20260624010000_complete_existing_schema.sql",
   "supabase/migrations/20260624020000_property_media_contacts.sql",
+  "supabase/migrations/20260710010000_property_feature_preferences.sql",
 ];
 
 let result;

@@ -63,7 +63,13 @@ function hasCostEvidence(property: Property, buyerProfile: BuyerProfile | null) 
 }
 
 function hasLifestyleEvidence(property: Property, buyerProfile: BuyerProfile | null) {
-  return hasLocationEvidence(property) || Boolean(
+  const hasFeatureEvidence = Boolean(
+    (buyerProfile?.requires_pool && property.has_pool !== null) ||
+    (buyerProfile?.requires_lanai && property.has_lanai !== null) ||
+    (buyerProfile?.requires_no_carpet && property.flooring_type !== "unknown") ||
+    (buyerProfile?.minimum_garage_spaces && property.garage_spaces !== null)
+  );
+  return hasLocationEvidence(property) || hasFeatureEvidence || Boolean(
     buyerProfile?.household_size && property.bedrooms !== null
   );
 }
@@ -179,6 +185,10 @@ export default async function ComparePage() {
               ["Bathrooms", (item: typeof ranked[number]) => item.property.bathrooms?.toString() ?? "Unknown"],
               ["Square footage", (item: typeof ranked[number]) => item.property.square_footage?.toLocaleString() ?? "Unknown"],
               ["Year built", (item: typeof ranked[number]) => item.property.year_built?.toString() ?? "Unknown"],
+              ["Pool", (item: typeof ranked[number]) => item.property.has_pool === null ? "Unknown" : item.property.has_pool ? "Yes" : "No"],
+              ["Lanai", (item: typeof ranked[number]) => item.property.has_lanai === null ? "Unknown" : item.property.has_lanai ? "Yes" : "No"],
+              ["Flooring", (item: typeof ranked[number]) => item.property.flooring_type === "hard_surface" ? "No carpet / hard surface" : item.property.flooring_type === "mixed" ? "Mixed flooring" : item.property.flooring_type === "carpet" ? "Carpet" : "Unknown"],
+              ["Garage spaces", (item: typeof ranked[number]) => item.property.garage_spaces?.toString() ?? "Unknown"],
               ["Monthly costs", (item: typeof ranked[number]) => formatCurrency(estimateMonthlyCost(item.property))],
               ["Risk factors", (item: typeof ranked[number]) => supportedScore(item.scores.riskScore, hasConditionEvidence(item.property), "condition ratings")],
               ["Cost Score", (item: typeof ranked[number]) => supportedScore(item.scores.costScore, hasCostEvidence(item.property, typedBuyerProfile), "a budget target")],

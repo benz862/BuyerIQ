@@ -347,7 +347,17 @@ export default async function BuyerProfilePage({
           <CardHeader>
             <CardTitle>Must-Haves, Nice-To-Haves, and Deal Breakers</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
+          <CardContent className="grid gap-6 sm:grid-cols-2">
+            <div className="space-y-3 sm:col-span-2">
+              <h3 className="font-medium">Property feature requirements</h3>
+              <p className="text-sm text-muted-foreground">Confirmed matches improve fit; confirmed conflicts reduce it. Unknown listing details remain unscored until verified.</p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_pool" defaultChecked={buyerProfile?.requires_pool ?? false} />Pool required</label>
+                <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_lanai" defaultChecked={buyerProfile?.requires_lanai ?? false} />Lanai required</label>
+                <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_no_carpet" defaultChecked={buyerProfile?.requires_no_carpet ?? false} />No carpet</label>
+                <div className="space-y-2"><Label htmlFor="minimum_garage_spaces">Minimum garage spaces</Label><select id="minimum_garage_spaces" name="minimum_garage_spaces" defaultValue={buyerProfile?.minimum_garage_spaces ?? ""} className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"><option value="">No requirement</option><option value="1">1-car</option><option value="2">2-car</option><option value="3">3-car</option></select></div>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="must_have_features">Must-have features</Label>
               <Textarea id="must_have_features" name="must_have_features" rows={4} defaultValue={buyerProfile?.must_have_features ?? ""} />

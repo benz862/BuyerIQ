@@ -269,6 +269,9 @@ export function PropertyForm() {
             <Label htmlFor="garage_spaces">Garage spaces</Label>
             <Input id="garage_spaces" name="garage_spaces" type="number" min="0" />
           </div>
+          <div className="space-y-2"><Label htmlFor="has_pool">Pool</Label><select id="has_pool" name="has_pool" defaultValue="unknown" className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div className="space-y-2"><Label htmlFor="has_lanai">Lanai</Label><select id="has_lanai" name="has_lanai" defaultValue="unknown" className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div className="space-y-2"><Label htmlFor="flooring_type">Flooring type</Label><select id="flooring_type" name="flooring_type" defaultValue="unknown" className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"><option value="unknown">Unknown</option><option value="hard_surface">No carpet / hard surface</option><option value="mixed">Mixed flooring</option><option value="carpet">Carpet</option></select></div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="property_description">Property description</Label>
             <Textarea id="property_description" name="property_description" rows={3} />

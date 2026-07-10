@@ -46,6 +46,9 @@ export function PropertyEditForm({ property }: { property: Property }) {
           <div className="space-y-2"><Label htmlFor="lot_size">Lot size</Label><Input id="lot_size" name="lot_size" defaultValue={property.lot_size ?? ""} /></div>
           <NumberField property={property} name="year_built" label="Year built" />
           <NumberField property={property} name="garage_spaces" label="Garage spaces" step="0.5" />
+          <div className="space-y-2"><Label htmlFor="has_pool">Pool</Label><select id="has_pool" name="has_pool" defaultValue={property.has_pool === null ? "unknown" : property.has_pool ? "yes" : "no"} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div className="space-y-2"><Label htmlFor="has_lanai">Lanai</Label><select id="has_lanai" name="has_lanai" defaultValue={property.has_lanai === null ? "unknown" : property.has_lanai ? "yes" : "no"} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div className="space-y-2"><Label htmlFor="flooring_type">Flooring type</Label><select id="flooring_type" name="flooring_type" defaultValue={property.flooring_type} className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"><option value="unknown">Unknown</option><option value="hard_surface">No carpet / hard surface</option><option value="mixed">Mixed flooring</option><option value="carpet">Carpet</option></select></div>
         </div>
       </section>
 
