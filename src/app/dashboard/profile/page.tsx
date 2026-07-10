@@ -345,30 +345,37 @@ export default async function BuyerProfilePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Must-Haves, Nice-To-Haves, and Deal Breakers</CardTitle>
+            <CardTitle>Your Property Preferences</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6 sm:grid-cols-2">
-            <div className="space-y-3 sm:col-span-2">
-              <h3 className="font-medium">Property feature requirements</h3>
-              <p className="text-sm text-muted-foreground">Confirmed matches improve fit; confirmed conflicts reduce it. Unknown listing details remain unscored until verified.</p>
+            <div className="space-y-2 sm:col-span-2">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Every household is different. Describe anything that matters to your decision—features, lease rules, accessibility, pets, outdoor space, storage, location, maintenance, utilities, noise, or any other requirement. You are not limited to a preset list.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="must_have_features">Must-have features</Label>
+              <Textarea id="must_have_features" name="must_have_features" rows={4} defaultValue={buyerProfile?.must_have_features ?? ""} placeholder="Anything the property must include or allow..." />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nice_to_have_features">Nice-to-have features</Label>
+              <Textarea id="nice_to_have_features" name="nice_to_have_features" rows={4} defaultValue={buyerProfile?.nice_to_have_features ?? ""} placeholder="Preferences that add value but are not required..." />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="deal_breakers">Deal breakers</Label>
+              <Textarea id="deal_breakers" name="deal_breakers" rows={4} defaultValue={buyerProfile?.deal_breakers ?? ""} placeholder="Anything that should rule a property out or require follow-up..." />
+            </div>
+            <div className="space-y-3 border-t pt-5 sm:col-span-2">
+              <h3 className="font-medium">Optional common-feature shortcuts</h3>
+              <p className="text-sm text-muted-foreground">
+                These are examples with dedicated scoring—not the complete set of preferences a user may enter above. Confirmed matches improve fit, confirmed conflicts reduce it, and unknown details remain unscored.
+              </p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_pool" defaultChecked={buyerProfile?.requires_pool ?? false} />Pool required</label>
                 <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_lanai" defaultChecked={buyerProfile?.requires_lanai ?? false} />Lanai required</label>
                 <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_no_carpet" defaultChecked={buyerProfile?.requires_no_carpet ?? false} />No carpet</label>
                 <div className="space-y-2"><Label htmlFor="minimum_garage_spaces">Minimum garage spaces</Label><select id="minimum_garage_spaces" name="minimum_garage_spaces" defaultValue={buyerProfile?.minimum_garage_spaces ?? ""} className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"><option value="">No requirement</option><option value="1">1-car</option><option value="2">2-car</option><option value="3">3-car</option></select></div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="must_have_features">Must-have features</Label>
-              <Textarea id="must_have_features" name="must_have_features" rows={4} defaultValue={buyerProfile?.must_have_features ?? ""} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="nice_to_have_features">Nice-to-have features</Label>
-              <Textarea id="nice_to_have_features" name="nice_to_have_features" rows={4} defaultValue={buyerProfile?.nice_to_have_features ?? ""} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="deal_breakers">Deal breakers</Label>
-              <Textarea id="deal_breakers" name="deal_breakers" rows={4} defaultValue={buyerProfile?.deal_breakers ?? ""} />
             </div>
           </CardContent>
         </Card>
