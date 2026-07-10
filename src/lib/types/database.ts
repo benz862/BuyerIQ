@@ -30,6 +30,10 @@ export type BuyerProfile = {
   must_have_features: string | null;
   nice_to_have_features: string | null;
   deal_breakers: string | null;
+  requires_pool: boolean;
+  requires_lanai: boolean;
+  requires_no_carpet: boolean;
+  minimum_garage_spaces: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -128,6 +132,9 @@ export type Property = {
   lot_size: string | null;
   year_built: number | null;
   garage_spaces: number | null;
+  has_pool: boolean | null;
+  has_lanai: boolean | null;
+  flooring_type: "unknown" | "hard_surface" | "mixed" | "carpet";
   property_description: string | null;
   buyer_notes: string | null;
   nearby_amenities: string | null;
@@ -377,6 +384,10 @@ export function informationCompletenessScore(property: Property) {
     ["Bedrooms", property.bedrooms],
     ["Bathrooms", property.bathrooms],
     ["Year built", property.year_built],
+    ["Garage spaces", property.garage_spaces],
+    ["Pool", property.has_pool !== null],
+    ["Lanai", property.has_lanai !== null],
+    ["Flooring type", property.flooring_type !== "unknown"],
     ["Property description", property.property_description],
     ["Personal notes", property.buyer_notes],
     ["Nearby amenities", property.nearby_amenities],
@@ -531,6 +542,27 @@ export function propertyScoreBreakdown(
   const transportationFit = transportationPriority > 0 || futureReadiness?.reduce_driving === "yes"
     ? walkabilityScore
     : null;
+  const featureFits = [
+    buyerProfile?.requires_pool && property.has_pool !== null
+      ? property.has_pool ? 100 : 25
+      : null,
+    buyerProfile?.requires_lanai && property.has_lanai !== null
+      ? property.has_lanai ? 100 : 25
+      : null,
+    buyerProfile?.requires_no_carpet && property.flooring_type !== "unknown"
+      ? property.flooring_type === "hard_surface"
+        ? 100
+        : property.flooring_type === "mixed"
+          ? 45
+          : 10
+      : null,
+    buyerProfile?.minimum_garage_spaces && property.garage_spaces !== null
+      ? property.garage_spaces >= buyerProfile.minimum_garage_spaces
+        ? 100
+        : clampScore((property.garage_spaces / buyerProfile.minimum_garage_spaces) * 70)
+      : null,
+  ];
+  const propertyFeatureFit = average(featureFits, 0);
   const lifestyleScore = average([
     bedroomNeed,
     officeFit,
@@ -540,6 +572,7 @@ export function propertyScoreBreakdown(
     dailyLivingFit,
     recreationFit,
     transportationFit,
+    propertyFeatureFit,
   ]);
 
   const propertyRisk = average([

@@ -127,6 +127,9 @@ export async function createProperty(
       lot_size: formData.get("lot_size")?.toString().trim() || null,
       year_built: parseNumber("year_built"),
       garage_spaces: parseNumber("garage_spaces"),
+      has_pool: formData.get("has_pool") === "yes" ? true : formData.get("has_pool") === "no" ? false : null,
+      has_lanai: formData.get("has_lanai") === "yes" ? true : formData.get("has_lanai") === "no" ? false : null,
+      flooring_type: ["hard_surface", "mixed", "carpet"].includes(formData.get("flooring_type")?.toString() ?? "") ? formData.get("flooring_type") : "unknown",
       property_description: formData.get("property_description")?.toString().trim() || null,
       buyer_notes: formData.get("buyer_notes")?.toString().trim() || null,
       nearby_amenities: formData.get("nearby_amenities")?.toString().trim() || null,
@@ -208,6 +211,9 @@ export async function updateProperty(formData: FormData) {
       lot_size: text("lot_size"),
       year_built: parseNumber("year_built"),
       garage_spaces: parseNumber("garage_spaces"),
+      has_pool: formData.get("has_pool") === "yes" ? true : formData.get("has_pool") === "no" ? false : null,
+      has_lanai: formData.get("has_lanai") === "yes" ? true : formData.get("has_lanai") === "no" ? false : null,
+      flooring_type: ["hard_surface", "mixed", "carpet"].includes(formData.get("flooring_type")?.toString() ?? "") ? formData.get("flooring_type") : "unknown",
       property_description: text("property_description"),
       buyer_notes: text("buyer_notes"),
       nearby_amenities: text("nearby_amenities"),
@@ -559,6 +565,10 @@ export async function saveBuyerProfile(formData: FormData) {
     must_have_features: parseText("must_have_features"),
     nice_to_have_features: parseText("nice_to_have_features"),
     deal_breakers: parseText("deal_breakers"),
+    requires_pool: parseBool("requires_pool"),
+    requires_lanai: parseBool("requires_lanai"),
+    requires_no_carpet: parseBool("requires_no_carpet"),
+    minimum_garage_spaces: parseNumber("minimum_garage_spaces"),
   }, { onConflict: "user_id" });
   if (buyerResult.error) redirectWithError(buyerResult.error.message);
 
