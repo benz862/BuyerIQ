@@ -135,6 +135,16 @@ export type Property = {
   has_pool: boolean | null;
   has_lanai: boolean | null;
   flooring_type: "unknown" | "hard_surface" | "mixed" | "carpet";
+  latitude: number | null;
+  longitude: number | null;
+  fema_flood_status: "mapped" | "not_mapped" | "unavailable" | null;
+  fema_flood_zone: string | null;
+  fema_zone_subtype: string | null;
+  fema_sfha: boolean | null;
+  fema_base_flood_elevation: number | null;
+  fema_flood_depth: number | null;
+  fema_flood_risk_level: "high" | "moderate" | "minimal" | "undetermined" | null;
+  fema_checked_at: string | null;
   property_description: string | null;
   buyer_notes: string | null;
   nearby_amenities: string | null;
@@ -391,6 +401,7 @@ export function informationCompletenessScore(property: Property) {
     ["Property description", property.property_description],
     ["Personal notes", property.buyer_notes],
     ["Nearby amenities", property.nearby_amenities],
+    ["FEMA flood-zone research", property.fema_flood_status === "mapped" || property.fema_flood_status === "not_mapped"],
     ["Roof age or condition", property.roof_condition !== "unknown"],
     ["HVAC condition", property.hvac_condition !== "unknown"],
     ["Foundation condition", property.foundation_condition !== "unknown"],
@@ -575,6 +586,15 @@ export function propertyScoreBreakdown(
     propertyFeatureFit,
   ]);
 
+  const femaFloodSafety = property.fema_flood_status === "mapped"
+    ? property.fema_flood_risk_level === "high"
+      ? 30
+      : property.fema_flood_risk_level === "moderate"
+        ? 65
+        : property.fema_flood_risk_level === "minimal"
+          ? 92
+          : 55
+    : null;
   const propertyRisk = average([
     CONDITION_SCORES[property.roof_condition],
     CONDITION_SCORES[property.hvac_condition],
@@ -584,6 +604,7 @@ export function propertyScoreBreakdown(
     CONDITION_SCORES[property.flooring_condition],
     CONDITION_SCORES[property.windows_condition],
     CONDITION_SCORES[property.exterior_condition],
+    femaFloodSafety,
   ]);
 
   const locationRisk = average([
@@ -689,12 +710,15 @@ export function generatePropertyInsights(
   if (scores.propertyRisk < 70) risks.push("Condition ratings point to inspection and repair risk.");
   if (property.roof_condition === "poor" || property.roof_condition === "unknown") risks.push("Roof age or condition needs verification.");
   if (property.foundation_condition === "poor" || property.foundation_condition === "unknown") risks.push("Foundation uncertainty could become a major cost.");
+  if (property.fema_flood_risk_level === "high") risks.push(`FEMA maps this coordinate in high-risk flood zone ${property.fema_flood_zone ?? "unknown"}.`);
+  if (property.fema_flood_risk_level === "moderate") risks.push(`FEMA maps this coordinate in a moderate flood-hazard area (Zone ${property.fema_flood_zone ?? "unknown"}).`);
   if (completeness.score < 80) risks.push(`Information is ${completeness.score}% complete; missing items reduce confidence.`);
 
   actions.push("Send open questions to the responsible party and track responses.");
   actions.push("Verify regional risks before offer, lease signing, or relocation commitment.");
   if (scores.costScore < 75) actions.push("Request a full cost scenario with taxes, insurance, HOA, fees, and reserves.");
   if (scores.propertyRisk < 75) actions.push("Use inspection findings to quantify repair credits or price negotiation.");
+  if (property.fema_flood_risk_level === "high" || property.fema_flood_risk_level === "moderate") actions.push("Confirm flood-insurance cost, requirements, and property-specific exposure with qualified sources.");
 
   return {
     strengths: strengths.slice(0, 5),

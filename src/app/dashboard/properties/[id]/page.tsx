@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, ImageIcon, Mail, Pencil, Phone, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, Download, Droplets, ImageIcon, Mail, Pencil, Phone, RefreshCw, Trash2, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { PropertyContactForm, PropertyPhotoUploader } from "@/components/properties/property-media-manager";
-import { createQuestion, deleteProperty, sendQuestionEmail } from "@/lib/actions/properties";
+import { createQuestion, deleteProperty, refreshFemaFloodData, sendQuestionEmail } from "@/lib/actions/properties";
 import { getUserProfile } from "@/lib/data/user-profile";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -358,6 +358,50 @@ export default async function PropertyDetailPage({
         </TabsContent>
 
         <TabsContent value="regional" className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Droplets className="size-5 text-primary" />
+                FEMA flood information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {typedProperty.fema_flood_status === "mapped" ? (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={typedProperty.fema_flood_risk_level === "high" ? "destructive" : "secondary"}>
+                      Zone {typedProperty.fema_flood_zone ?? "unknown"}
+                    </Badge>
+                    <Badge variant="outline">
+                      {typedProperty.fema_flood_risk_level ?? "undetermined"} mapped flood risk
+                    </Badge>
+                  </div>
+                  {typedProperty.fema_zone_subtype && <p className="text-sm">{typedProperty.fema_zone_subtype}</p>}
+                  <dl className="grid grid-cols-2 gap-3 text-sm">
+                    <div><dt className="text-muted-foreground">Special Flood Hazard Area</dt><dd>{typedProperty.fema_sfha === null ? "Unknown" : typedProperty.fema_sfha ? "Yes" : "No"}</dd></div>
+                    <div><dt className="text-muted-foreground">Base flood elevation</dt><dd>{typedProperty.fema_base_flood_elevation === null ? "Not provided" : `${typedProperty.fema_base_flood_elevation} ft`}</dd></div>
+                  </dl>
+                </>
+              ) : typedProperty.fema_flood_status === "not_mapped" ? (
+                <p className="text-sm text-muted-foreground">FEMA returned no mapped flood-hazard polygon at this coordinate.</p>
+              ) : typedProperty.fema_flood_status === "unavailable" ? (
+                <p className="text-sm text-muted-foreground">FEMA was temporarily unavailable during the last check.</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Flood data has not been researched for this property. Properties added from listing search are checked automatically.
+                </p>
+              )}
+              {typedProperty.fema_checked_at && (
+                <p className="text-xs text-muted-foreground">Checked {new Date(typedProperty.fema_checked_at).toLocaleString()} using FEMA NFHL.</p>
+              )}
+              <form action={refreshFemaFloodData.bind(null, typedProperty.id)}>
+                <Button type="submit" size="sm" variant="outline"><RefreshCw className="size-4" />Research or refresh FEMA data</Button>
+              </form>
+              <p className="text-xs text-muted-foreground">
+                FEMA map data is a due-diligence aid, not an insurance quote or a parcel survey. Confirm coverage and requirements with FEMA, your insurer, and local authorities.
+              </p>
+            </CardContent>
+          </Card>
           <InsightList title={`${REGION_LABELS[typedProperty.region_key]} intelligence`} items={insights.regionalRisks} />
           <InsightList title="Questions to ask" items={insights.questionsToAsk} />
         </TabsContent>

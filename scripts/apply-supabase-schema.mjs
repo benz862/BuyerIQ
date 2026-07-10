@@ -55,6 +55,7 @@ const migrations = [
   "supabase/migrations/20260624010000_complete_existing_schema.sql",
   "supabase/migrations/20260624020000_property_media_contacts.sql",
   "supabase/migrations/20260710010000_property_feature_preferences.sql",
+  "supabase/migrations/20260710020000_fema_flood_data.sql",
 ];
 
 let result;
