@@ -312,6 +312,47 @@ export function PropertySearchAdd() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 overflow-auto pb-4">
+            {properties.length > 0 && (
+              <div className="sticky top-0 z-10 space-y-3 border-b bg-card pb-3">
+                {selectedProperty ? (
+                  <div className="rounded-xl border border-primary bg-primary/5 p-3">
+                    <div className="flex gap-3">
+                      <ListingImage
+                        property={selectedProperty}
+                        className="h-24 w-28 shrink-0 rounded-lg"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                          <Check className="size-3.5" /> Selected
+                        </div>
+                        <div className="mt-1 font-semibold leading-snug">
+                          {selectedProperty.address}
+                        </div>
+                        <div className="mt-1 text-sm">{formatPrice(selectedProperty)}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {selectedProperty.propertyType ?? "Property"} · {selectedProperty.bedrooms ?? "-"} bed · {selectedProperty.bathrooms ?? "-"} bath
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed p-3 text-sm text-muted-foreground">
+                    Select a listing below to review it and add it to your comparison.
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={!selectedProperty || isAdding}
+                  onClick={addSelectedProperty}
+                >
+                  <BookmarkPlus />
+                  {isAdding ? "Adding to BuyerIQ..." : "Add selected property to comparison"}
+                </Button>
+              </div>
+            )}
+
             {properties.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 Run a search, then choose a listing to add to your property list.
@@ -356,36 +397,6 @@ export function PropertySearchAdd() {
               </button>
             ))}
 
-            {selectedProperty && (
-              <div className="rounded-xl border border-primary bg-primary/5 p-4">
-                <ListingImage
-                  property={selectedProperty}
-                  className="mb-4 aspect-[16/9] w-full rounded-lg"
-                />
-                <div className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  Selected property details
-                </div>
-                <div className="mt-2 font-semibold">{selectedProperty.address}</div>
-                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <div><dt className="text-muted-foreground">Type</dt><dd>{selectedProperty.propertyType ?? "Unavailable"}</dd></div>
-                  <div><dt className="text-muted-foreground">Price</dt><dd>{formatPrice(selectedProperty)}</dd></div>
-                  <div><dt className="text-muted-foreground">Beds / baths</dt><dd>{selectedProperty.bedrooms ?? "-"} / {selectedProperty.bathrooms ?? "-"}</dd></div>
-                  <div><dt className="text-muted-foreground">Square feet</dt><dd>{selectedProperty.squareFeet?.toLocaleString() ?? "Unavailable"}</dd></div>
-                  <div><dt className="text-muted-foreground">Year built</dt><dd>{selectedProperty.yearBuilt ?? "Unavailable"}</dd></div>
-                  <div><dt className="text-muted-foreground">Monthly HOA</dt><dd>{selectedProperty.hoaFee !== undefined ? `$${selectedProperty.hoaFee.toLocaleString()}` : "Unavailable"}</dd></div>
-                </dl>
-              </div>
-            )}
-
-            <Button
-              type="button"
-              className="w-full"
-              disabled={!selectedProperty || isAdding}
-              onClick={addSelectedProperty}
-            >
-              <BookmarkPlus />
-              {isAdding ? "Adding to BuyerIQ..." : "Add to BuyerIQ for comparison"}
-            </Button>
           </CardContent>
         </Card>
       </section>
