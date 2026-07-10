@@ -1,4 +1,4 @@
-import { Trophy } from "lucide-react";
+import { Scale, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getUserProfile } from "@/lib/data/user-profile";
@@ -49,6 +49,19 @@ export default async function ComparePage() {
     }))
     .sort((a, b) => b.scores.overall - a.scores.overall);
   const best = ranked[0];
+  const topScore = best?.scores.overall;
+  const leaders = topScore === undefined
+    ? []
+    : ranked.filter((item) => item.scores.overall === topScore);
+  const isTie = leaders.length > 1;
+  const monthlyCosts = ranked
+    .map((item) => estimateMonthlyCost(item.property))
+    .filter((cost): cost is number => cost !== null);
+  const lowestMonthlyCost = monthlyCosts.length > 0 ? Math.min(...monthlyCosts) : null;
+  const squareFootages = ranked
+    .map((item) => item.property.square_footage)
+    .filter((size): size is number => size !== null);
+  const largestSquareFootage = squareFootages.length > 0 ? Math.max(...squareFootages) : null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
@@ -62,12 +75,21 @@ export default async function ComparePage() {
       {best && (
         <Card>
           <CardContent className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center">
-            <Trophy className="size-5 text-primary" />
+            {isTie ? <Scale className="size-5 text-primary" /> : <Trophy className="size-5 text-primary" />}
             <div>
-              <p className="font-medium">Best overall choice: {best.property.property_name}</p>
-              <p className="text-sm text-muted-foreground">
-                Property Fit Score {best.scores.propertyFitScore}/100 · {recommendationForScore(best.scores.overall)}
+              <p className="font-medium">
+                {isTie
+                  ? `Top score is tied: ${leaders.map((item) => item.property.property_name).join(" and ")}`
+                  : `Best overall choice: ${best.property.property_name}`}
               </p>
+              <p className="text-sm text-muted-foreground">
+                BuyerIQ Score {best.scores.overall}/100 · {recommendationForScore(best.scores.overall)}
+              </p>
+              {leaders.some((item) => item.scores.confidenceScore < 70) && (
+                <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+                  Preliminary result: more property details are needed to make a confident distinction.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -85,8 +107,13 @@ export default async function ComparePage() {
           </thead>
           <tbody>
             {[
-              ["Property Fit Score", (item: typeof ranked[number]) => `${item.scores.propertyFitScore}/100`],
+              ["Overall BuyerIQ Score", (item: typeof ranked[number]) => `${item.scores.overall}/100`],
               ["Recommendation", (item: typeof ranked[number]) => recommendationForScore(item.scores.overall)],
+              ["Property type", (item: typeof ranked[number]) => item.property.property_category.replaceAll("_", " ")],
+              ["Bedrooms", (item: typeof ranked[number]) => item.property.bedrooms?.toString() ?? "Unknown"],
+              ["Bathrooms", (item: typeof ranked[number]) => item.property.bathrooms?.toString() ?? "Unknown"],
+              ["Square footage", (item: typeof ranked[number]) => item.property.square_footage?.toLocaleString() ?? "Unknown"],
+              ["Year built", (item: typeof ranked[number]) => item.property.year_built?.toString() ?? "Unknown"],
               ["Monthly costs", (item: typeof ranked[number]) => formatCurrency(estimateMonthlyCost(item.property))],
               ["Risk factors", (item: typeof ranked[number]) => `${item.scores.riskScore}/100`],
               ["Cost Score", (item: typeof ranked[number]) => `${item.scores.costScore}/100`],
@@ -110,7 +137,18 @@ export default async function ComparePage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {ranked.map(({ property, scores }) => (
+        {ranked.map(({ property, scores }) => {
+          const monthlyCost = estimateMonthlyCost(property);
+          const highlights = [
+            monthlyCost !== null && monthlyCost === lowestMonthlyCost
+              ? "Lowest estimated monthly cost"
+              : null,
+            property.square_footage !== null && property.square_footage === largestSquareFootage
+              ? "Largest living area"
+              : null,
+          ].filter((value): value is string => value !== null);
+
+          return (
           <Card key={property.id}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between gap-3 text-lg">
@@ -119,11 +157,19 @@ export default async function ComparePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>Pros: strongest categories are surfaced in the report tab.</p>
-              <p>Cons: inspect any category scoring below 70 before making an offer.</p>
+              <p>
+                <span className="font-medium text-foreground">Highlights:</span>{" "}
+                {highlights.length > 0 ? highlights.join(" · ") : "No clear quantitative advantage yet."}
+              </p>
+              <p>
+                <span className="font-medium text-foreground">Confidence:</span>{" "}
+                {scores.confidenceScore}/100
+                {scores.confidenceScore < 70 ? " — add condition and location research before relying on this score." : ""}
+              </p>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
