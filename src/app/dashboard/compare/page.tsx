@@ -15,6 +15,63 @@ import {
   type UserPriorities,
 } from "@/lib/types/database";
 
+const conditionFields = [
+  "roof_condition",
+  "hvac_condition",
+  "foundation_condition",
+  "kitchen_condition",
+  "bathrooms_condition",
+  "flooring_condition",
+  "windows_condition",
+  "exterior_condition",
+] as const;
+
+const locationScoreFields = [
+  "shopping_score",
+  "healthcare_score",
+  "restaurants_score",
+  "parks_score",
+  "entertainment_score",
+  "walkability_score",
+] as const;
+
+const futureScoreFields = [
+  "growing_family_score",
+  "retirement_score",
+  "aging_in_place_score",
+  "resale_potential_score",
+  "remote_work_score",
+] as const;
+
+function hasConditionEvidence(property: Property) {
+  return conditionFields.some((field) => property[field] !== "unknown");
+}
+
+function hasLocationEvidence(property: Property) {
+  return locationScoreFields.some((field) => typeof property[field] === "number");
+}
+
+function hasFutureEvidence(property: Property) {
+  return futureScoreFields.some((field) => typeof property[field] === "number");
+}
+
+function hasCostEvidence(property: Property, buyerProfile: BuyerProfile | null) {
+  if (!property.purchase_price) return false;
+  return property.project_mode === "renting"
+    ? Boolean(buyerProfile?.desired_monthly_payment)
+    : Boolean(buyerProfile?.budget || buyerProfile?.desired_monthly_payment);
+}
+
+function hasLifestyleEvidence(property: Property, buyerProfile: BuyerProfile | null) {
+  return hasLocationEvidence(property) || Boolean(
+    buyerProfile?.household_size && property.bedrooms !== null
+  );
+}
+
+function supportedScore(score: number, supported: boolean, missing: string) {
+  return supported ? `${score}/100` : `Needs ${missing}`;
+}
+
 export default async function ComparePage() {
   const supabase = await createClient();
   const profile = await getUserProfile();
@@ -49,11 +106,12 @@ export default async function ComparePage() {
       scores: propertyScoreBreakdown(property, typedBuyerProfile, typedPriorities, typedReadiness),
     }))
     .sort((a, b) => b.scores.overall - a.scores.overall);
-  const best = ranked[0];
+  const reliableRanked = ranked.filter((item) => item.scores.confidenceScore >= 70);
+  const best = reliableRanked[0];
   const topScore = best?.scores.overall;
   const leaders = topScore === undefined
     ? []
-    : ranked.filter((item) => item.scores.overall === topScore);
+    : reliableRanked.filter((item) => item.scores.overall === topScore);
   const isTie = leaders.length > 1;
   const monthlyCosts = ranked
     .map((item) => estimateMonthlyCost(item.property))
@@ -73,23 +131,28 @@ export default async function ComparePage() {
         </p>
       </div>
 
-      {best && (
+      {ranked.length > 0 && (
         <Card>
           <CardContent className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center">
-            {isTie ? <Scale className="size-5 text-primary" /> : <Trophy className="size-5 text-primary" />}
+            {!best || isTie ? <Scale className="size-5 text-primary" /> : <Trophy className="size-5 text-primary" />}
             <div>
               <p className="font-medium">
-                {isTie
+                {!best
+                  ? "No reliable winner yet"
+                  : isTie
                   ? `Top score is tied: ${leaders.map((item) => item.property.property_name).join(" and ")}`
                   : `Best overall choice: ${best.property.property_name}`}
               </p>
-              <p className="text-sm text-muted-foreground">
-                BuyerIQ Score {best.scores.overall}/100 · {recommendationForScore(best.scores.overall)}
-              </p>
-              <ScoreBar value={best.scores.overall} className="mt-3 w-full sm:w-96" label="Top comparison score" />
-              {leaders.some((item) => item.scores.confidenceScore < 70) && (
+              {best ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    BuyerIQ Score {best.scores.overall}/100 · {recommendationForScore(best.scores.overall)}
+                  </p>
+                  <ScoreBar value={best.scores.overall} className="mt-3 w-full sm:w-96" label="Top comparison score" />
+                </>
+              ) : (
                 <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                  Preliminary result: more property details are needed to make a confident distinction.
+                  These listings contain basic facts, but not enough condition, location, budget-fit, or future-readiness evidence to support percentage rankings.
                 </p>
               )}
             </div>
@@ -109,20 +172,20 @@ export default async function ComparePage() {
           </thead>
           <tbody>
             {[
-              ["Overall BuyerIQ Score", (item: typeof ranked[number]) => `${item.scores.overall}/100`],
-              ["Recommendation", (item: typeof ranked[number]) => recommendationForScore(item.scores.overall)],
+              ["Overall BuyerIQ Score", (item: typeof ranked[number]) => item.scores.confidenceScore >= 70 ? `${item.scores.overall}/100` : "Needs more data"],
+              ["Recommendation", (item: typeof ranked[number]) => item.scores.confidenceScore >= 70 ? recommendationForScore(item.scores.overall) : "Not yet available"],
               ["Property type", (item: typeof ranked[number]) => item.property.property_category.replaceAll("_", " ")],
               ["Bedrooms", (item: typeof ranked[number]) => item.property.bedrooms?.toString() ?? "Unknown"],
               ["Bathrooms", (item: typeof ranked[number]) => item.property.bathrooms?.toString() ?? "Unknown"],
               ["Square footage", (item: typeof ranked[number]) => item.property.square_footage?.toLocaleString() ?? "Unknown"],
               ["Year built", (item: typeof ranked[number]) => item.property.year_built?.toString() ?? "Unknown"],
               ["Monthly costs", (item: typeof ranked[number]) => formatCurrency(estimateMonthlyCost(item.property))],
-              ["Risk factors", (item: typeof ranked[number]) => `${item.scores.riskScore}/100`],
-              ["Cost Score", (item: typeof ranked[number]) => `${item.scores.costScore}/100`],
-              ["Lifestyle Score", (item: typeof ranked[number]) => `${item.scores.lifestyleScore}/100`],
-              ["Property Risk", (item: typeof ranked[number]) => `${item.scores.propertyRisk}/100`],
-              ["Location Risk", (item: typeof ranked[number]) => `${item.scores.locationRisk}/100`],
-              ["Future Expense Risk", (item: typeof ranked[number]) => `${item.scores.futureExpenseRisk}/100`],
+              ["Risk factors", (item: typeof ranked[number]) => supportedScore(item.scores.riskScore, hasConditionEvidence(item.property), "condition ratings")],
+              ["Cost Score", (item: typeof ranked[number]) => supportedScore(item.scores.costScore, hasCostEvidence(item.property, typedBuyerProfile), "a budget target")],
+              ["Lifestyle Score", (item: typeof ranked[number]) => supportedScore(item.scores.lifestyleScore, hasLifestyleEvidence(item.property, typedBuyerProfile), "profile and location data")],
+              ["Property Condition", (item: typeof ranked[number]) => supportedScore(item.scores.propertyRisk, hasConditionEvidence(item.property), "condition ratings")],
+              ["Location Fit", (item: typeof ranked[number]) => supportedScore(item.scores.locationRisk, hasLocationEvidence(item.property), "location research")],
+              ["Future Readiness", (item: typeof ranked[number]) => supportedScore(item.scores.futureExpenseRisk, hasFutureEvidence(item.property), "future-readiness ratings")],
               ["Confidence Score", (item: typeof ranked[number]) => `${item.scores.confidenceScore}/100`],
             ].map(([label, render]) => (
               <tr key={String(label)} className="border-t">
@@ -155,11 +218,15 @@ export default async function ComparePage() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between gap-3 text-lg">
                 {property.property_name}
-                <Badge variant="secondary">{scores.overall}</Badge>
+                <Badge variant="secondary">
+                  {scores.confidenceScore >= 70 ? scores.overall : "Needs data"}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <ScoreBar value={scores.overall} label={`${property.property_name} BuyerIQ score`} />
+              {scores.confidenceScore >= 70 && (
+                <ScoreBar value={scores.overall} label={`${property.property_name} BuyerIQ score`} />
+              )}
               <p>
                 <span className="font-medium text-foreground">Highlights:</span>{" "}
                 {highlights.length > 0 ? highlights.join(" · ") : "No clear quantitative advantage yet."}
