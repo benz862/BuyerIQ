@@ -1,4 +1,8 @@
-import type { BuyerIQProperty, PropertyListingType } from "@/types/property";
+import type {
+  BuyerIQProperty,
+  PropertyListingType,
+  PropertySearchType,
+} from "@/types/property";
 
 const RENTCAST_BASE_URL = "https://api.rentcast.io/v1";
 
@@ -80,6 +84,11 @@ function normalizeRentCastListing(
     ? raw.photos.filter((photo): photo is string => typeof photo === "string")
     : [];
 
+  const hoa =
+    typeof raw.hoa === "object" && raw.hoa !== null
+      ? (raw.hoa as Record<string, unknown>)
+      : undefined;
+
   return {
     id: String(raw.id ?? raw.listingId ?? raw.propertyId ?? `${latitude},${longitude},${address}`),
     source: "rentcast",
@@ -92,6 +101,9 @@ function normalizeRentCastListing(
     bedrooms: toNumber(raw.bedrooms ?? raw.beds),
     bathrooms: toNumber(raw.bathrooms ?? raw.baths),
     squareFeet: toNumber(raw.squareFootage ?? raw.squareFeet ?? raw.sqft),
+    lotSize: toNumber(raw.lotSize),
+    yearBuilt: toNumber(raw.yearBuilt),
+    hoaFee: toNumber(hoa?.fee ?? raw.hoaFee),
     propertyType: toString(raw.propertyType),
     latitude,
     longitude,
@@ -115,6 +127,7 @@ export async function searchRentCastListings(params: {
   maxPrice?: number;
   bedrooms?: number;
   bathrooms?: number;
+  propertyType?: Exclude<PropertySearchType, "all">;
   limit?: number;
 }): Promise<BuyerIQProperty[]> {
   const key = requireRentCastKey();
@@ -132,6 +145,7 @@ export async function searchRentCastListings(params: {
   if (params.latitude !== undefined) query.set("latitude", String(params.latitude));
   if (params.longitude !== undefined) query.set("longitude", String(params.longitude));
   if (params.radius !== undefined) query.set("radius", String(params.radius));
+  if (params.propertyType) query.set("propertyType", params.propertyType);
   query.set("status", "Active");
   const priceRange = toRentCastRange(params.minPrice, params.maxPrice);
   if (priceRange) query.set("price", priceRange);

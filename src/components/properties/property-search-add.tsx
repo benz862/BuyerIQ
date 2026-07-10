@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookmarkPlus, Search } from "lucide-react";
+import { BookmarkPlus, Building2, Check, Search } from "lucide-react";
 import { PropertySearchMap } from "@/components/property/PropertySearchMap";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { BuyerIQProperty, PropertyListingType } from "@/types/property";
+import type {
+  BuyerIQProperty,
+  PropertyListingType,
+  PropertySearchType,
+} from "@/types/property";
 
 type SearchState = {
   listingType: PropertyListingType;
+  propertyType: PropertySearchType;
   city: string;
   state: string;
   zipCode: string;
@@ -31,6 +36,7 @@ type SearchState = {
 
 const initialSearch: SearchState = {
   listingType: "sale",
+  propertyType: "all",
   city: "Fort Myers",
   state: "FL",
   zipCode: "",
@@ -45,6 +51,33 @@ function formatPrice(property: BuyerIQProperty) {
   return property.listingType === "rent"
     ? `$${property.price.toLocaleString()}/mo`
     : `$${property.price.toLocaleString()}`;
+}
+
+function ListingImage({ property, className }: { property: BuyerIQProperty; className: string }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const photoUrl = property.photos[0];
+  const showPhoto = Boolean(photoUrl && failedUrl !== photoUrl);
+
+  return (
+    <div className={`relative overflow-hidden bg-muted ${className}`}>
+      {showPhoto ? (
+        // Listing image hosts vary, so they cannot use a fixed Next.js remote-image allowlist.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photoUrl}
+          alt={`Listing preview for ${property.address}`}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={() => setFailedUrl(photoUrl)}
+        />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Building2 className="size-8" aria-hidden="true" />
+          <span className="px-2 text-center text-xs">Photo unavailable</span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PropertySearchAdd() {
@@ -67,6 +100,7 @@ export function PropertySearchAdd() {
   async function runSearch() {
     setIsLoading(true);
     setMessage("");
+    setSelectedProperty(null);
 
     try {
       const params = new URLSearchParams();
@@ -86,7 +120,6 @@ export function PropertySearchAdd() {
 
       const nextProperties = data.properties ?? [];
       setProperties(nextProperties);
-      setSelectedProperty(nextProperties[0] ?? null);
       if (nextProperties.length === 0) {
         setMessage("No listings matched those filters.");
       }
@@ -133,6 +166,10 @@ export function PropertySearchAdd() {
           <CardTitle>Search listings</CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Choose what you are looking for—such as a house, condo, townhouse, or apartment—and
+            BuyerIQ will return only matching active listings.
+          </p>
           <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-1.5">
               <Label htmlFor="listing-type">Listing type</Label>
@@ -146,6 +183,27 @@ export function PropertySearchAdd() {
                 <SelectContent>
                   <SelectItem value="sale">For sale</SelectItem>
                   <SelectItem value="rent">For rent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="property-type">Property type</Label>
+              <Select
+                value={search.propertyType}
+                onValueChange={(value) => updateSearch("propertyType", value as PropertySearchType)}
+              >
+                <SelectTrigger id="property-type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All residential types</SelectItem>
+                  <SelectItem value="Single Family">House (single-family)</SelectItem>
+                  <SelectItem value="Condo">Condo</SelectItem>
+                  <SelectItem value="Townhouse">Townhouse</SelectItem>
+                  <SelectItem value="Apartment">Apartment</SelectItem>
+                  <SelectItem value="Multi-Family">Multi-family home</SelectItem>
+                  <SelectItem value="Manufactured">Manufactured home</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -261,28 +319,26 @@ export function PropertySearchAdd() {
             )}
 
             {properties.map((property) => (
-              <div
+              <button
+                type="button"
                 key={property.id}
-                role="button"
-                tabIndex={0}
                 onClick={() => setSelectedProperty(property)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setSelectedProperty(property);
-                  }
-                }}
                 className={`w-full rounded-xl border p-3 text-left transition-colors hover:bg-muted/50 ${
                   selectedProperty?.id === property.id ? "border-primary bg-muted/40" : "border-border"
                 }`}
               >
-                <div className="font-medium leading-snug">{property.address}</div>
-                <div className="mt-1 text-sm">{formatPrice(property)}</div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {property.bedrooms ?? "-"} bed · {property.bathrooms ?? "-"} bath ·{" "}
-                  {property.squareFeet
-                    ? `${property.squareFeet.toLocaleString()} sq ft`
-                    : "sq ft unavailable"}
+                <div className="flex gap-3">
+                  <ListingImage property={property} className="h-24 w-28 shrink-0 rounded-lg" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium leading-snug">{property.address}</div>
+                    <div className="mt-1 text-sm">{formatPrice(property)}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {property.bedrooms ?? "-"} bed · {property.bathrooms ?? "-"} bath ·{" "}
+                      {property.squareFeet
+                        ? `${property.squareFeet.toLocaleString()} sq ft`
+                        : "sq ft unavailable"}
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Badge variant="secondary">
@@ -291,9 +347,35 @@ export function PropertySearchAdd() {
                   {property.daysOnMarket !== undefined && (
                     <Badge variant="outline">{property.daysOnMarket} days</Badge>
                   )}
+                  <Badge variant={selectedProperty?.id === property.id ? "default" : "outline"}>
+                    {selectedProperty?.id === property.id ? (
+                      <><Check /> Selected</>
+                    ) : "Select property"}
+                  </Badge>
                 </div>
-              </div>
+              </button>
             ))}
+
+            {selectedProperty && (
+              <div className="rounded-xl border border-primary bg-primary/5 p-4">
+                <ListingImage
+                  property={selectedProperty}
+                  className="mb-4 aspect-[16/9] w-full rounded-lg"
+                />
+                <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Selected property details
+                </div>
+                <div className="mt-2 font-semibold">{selectedProperty.address}</div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div><dt className="text-muted-foreground">Type</dt><dd>{selectedProperty.propertyType ?? "Unavailable"}</dd></div>
+                  <div><dt className="text-muted-foreground">Price</dt><dd>{formatPrice(selectedProperty)}</dd></div>
+                  <div><dt className="text-muted-foreground">Beds / baths</dt><dd>{selectedProperty.bedrooms ?? "-"} / {selectedProperty.bathrooms ?? "-"}</dd></div>
+                  <div><dt className="text-muted-foreground">Square feet</dt><dd>{selectedProperty.squareFeet?.toLocaleString() ?? "Unavailable"}</dd></div>
+                  <div><dt className="text-muted-foreground">Year built</dt><dd>{selectedProperty.yearBuilt ?? "Unavailable"}</dd></div>
+                  <div><dt className="text-muted-foreground">Monthly HOA</dt><dd>{selectedProperty.hoaFee !== undefined ? `$${selectedProperty.hoaFee.toLocaleString()}` : "Unavailable"}</dd></div>
+                </dl>
+              </div>
+            )}
 
             <Button
               type="button"
@@ -302,7 +384,7 @@ export function PropertySearchAdd() {
               onClick={addSelectedProperty}
             >
               <BookmarkPlus />
-              {isAdding ? "Adding..." : "Add selected property"}
+              {isAdding ? "Adding to BuyerIQ..." : "Add to BuyerIQ for comparison"}
             </Button>
           </CardContent>
         </Card>
