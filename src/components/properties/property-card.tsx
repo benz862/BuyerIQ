@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BedDouble, Gauge, Ruler, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { ScoreBar } from "@/components/ui/score-bar";
 import {
   formatCurrency,
   propertyScoreBreakdown,
@@ -73,7 +73,7 @@ export function PropertyCard({
               <span>{recommendationForScore(scores.overall)}</span>
               <span>{scores.overall}/100</span>
             </div>
-            <Progress value={scores.overall} className="h-2" />
+            <ScoreBar value={scores.overall} label={`${property.property_name} BuyerIQ score`} />
           </div>
           <span className="inline-flex items-center gap-1 text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
             View report
