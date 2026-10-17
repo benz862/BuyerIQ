@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Camera, Loader2, Upload, UserRoundPlus } from "lucide-react";
+import { Camera, ClipboardPaste, Loader2, Upload, UserRoundPlus, X } from "lucide-react";
 import { savePropertyContact, savePropertyPhoto } from "@/lib/actions/properties";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,7 @@ async function uploadFile({
 export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<string>();
+  const [pastedFile, setPastedFile] = useState<File>();
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -76,9 +77,9 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
           onSubmit={(event) => {
             event.preventDefault();
             const form = event.currentTarget;
-            const file = fileRef.current?.files?.[0];
+            const file = pastedFile ?? fileRef.current?.files?.[0];
             if (!file) {
-              setMessage("Choose or take a photo first.");
+              setMessage("Choose, take, or paste a photo first.");
               return;
             }
 
@@ -99,6 +100,7 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
                   return;
                 }
                 form.reset();
+                setPastedFile(undefined);
                 setMessage("Photo saved.");
               } catch (error) {
                 setMessage(error instanceof Error ? error.message : "Upload failed.");
@@ -117,6 +119,42 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
               accept="image/*"
               capture="environment"
             />
+          </div>
+          <div
+            className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+            onPaste={(event) => {
+              const image = Array.from(event.clipboardData.files).find((file) => file.type.startsWith("image/"));
+              if (!image) {
+                setMessage("Paste an image, not a link or text.");
+                return;
+              }
+              event.preventDefault();
+              setPastedFile(image);
+              setMessage(undefined);
+            }}
+            role="region"
+            tabIndex={0}
+            aria-label="Paste a property photo"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                <ClipboardPaste className="size-4 shrink-0" />
+                <span className="truncate">{pastedFile ? `Pasted image: ${pastedFile.name}` : "Or click here and paste an image from your clipboard"}</span>
+              </div>
+              {pastedFile && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={() => setPastedFile(undefined)}
+                  aria-label="Remove pasted image"
+                >
+                  <X className="size-4" />
+                </Button>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Only paste photos you are allowed to use.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
