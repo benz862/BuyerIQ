@@ -366,11 +366,14 @@ export default async function BuyerProfilePage({
               <Textarea id="deal_breakers" name="deal_breakers" rows={4} defaultValue={buyerProfile?.deal_breakers ?? ""} placeholder="Anything that should rule a property out or require follow-up..." />
             </div>
             <div className="space-y-3 border-t pt-5 sm:col-span-2">
-              <h3 className="font-medium">Optional common-feature shortcuts</h3>
+              <h3 className="font-medium">Home requirements</h3>
               <p className="text-sm text-muted-foreground">
-                These are examples with dedicated scoring—not the complete set of preferences a user may enter above. Confirmed matches improve fit, confirmed conflicts reduce it, and unknown details remain unscored.
+                Set the minimum space you need. BuyerIQ gives additional credit when a property exceeds these requirements without exceeding your cost targets.
               </p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-2"><Label htmlFor="minimum_bedrooms">Minimum bedrooms</Label><Input id="minimum_bedrooms" name="minimum_bedrooms" type="number" min="0" max="20" defaultValue={buyerProfile?.minimum_bedrooms ?? ""} placeholder="No minimum" /></div>
+                <div className="space-y-2"><Label htmlFor="minimum_bathrooms">Minimum bathrooms</Label><Input id="minimum_bathrooms" name="minimum_bathrooms" type="number" min="0" max="20" step="0.5" defaultValue={buyerProfile?.minimum_bathrooms ?? ""} placeholder="No minimum" /></div>
+                <div className="space-y-2"><Label htmlFor="minimum_square_footage">Minimum square feet</Label><Input id="minimum_square_footage" name="minimum_square_footage" type="number" min="0" max="50000" defaultValue={buyerProfile?.minimum_square_footage ?? ""} placeholder="No minimum" /></div>
                 <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_pool" defaultChecked={buyerProfile?.requires_pool ?? false} />Pool required</label>
                 <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_lanai" defaultChecked={buyerProfile?.requires_lanai ?? false} />Lanai required</label>
                 <label className="flex items-center gap-3 text-sm"><Checkbox name="requires_no_carpet" defaultChecked={buyerProfile?.requires_no_carpet ?? false} />No carpet</label>

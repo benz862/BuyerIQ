@@ -34,6 +34,9 @@ export type BuyerProfile = {
   requires_lanai: boolean;
   requires_no_carpet: boolean;
   minimum_garage_spaces: number | null;
+  minimum_bedrooms: number | null;
+  minimum_bathrooms: number | null;
+  minimum_square_footage: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -239,6 +242,10 @@ export type ScoreBreakdown = {
   futureExpenseRisk: number;
   overall: number;
   fitScore: number;
+  listingSignals: {
+    strengths: string[];
+    concerns: string[];
+  };
 };
 
 export type RecommendationLevel =
@@ -367,6 +374,35 @@ function inferredLocationScore(
   if (priority >= 3) return 58;
   if (priority > 0) return 66;
   return null;
+}
+
+function listingDescriptionSignals(description: string | null | undefined) {
+  const normalized = description?.toLowerCase() ?? "";
+  const strengths = [
+    { terms: ["new roof", "roof replaced", "recent roof", "newer roof"], label: "recent roof work" },
+    { terms: ["new hvac", "new ac", "hvac replaced", "air conditioner replaced"], label: "recent HVAC work" },
+    { terms: ["impact windows", "hurricane windows"], label: "impact windows" },
+    { terms: ["fully renovated", "fully remodeled", "complete renovation"], label: "major renovation" },
+    { terms: ["new construction", "brand new construction"], label: "new construction" },
+  ].filter(({ terms }) => terms.some((term) => normalized.includes(term))).map(({ label }) => label);
+  const concerns = [
+    { terms: ["as is", "as-is"], label: "sold as-is" },
+    { terms: ["fixer", "needs tlc", "needs work", "handyman special"], label: "repair-oriented listing language" },
+    { terms: ["deferred maintenance", "original roof", "roof leak", "water damage", "water intrusion"], label: "maintenance or water concern" },
+    { terms: ["foundation issue", "structural issue", "settlement"], label: "structural concern" },
+    { terms: ["mold", "remediation", "cash only"], label: "material repair or financing concern" },
+  ].filter(({ terms }) => terms.some((term) => normalized.includes(term))).map(({ label }) => label);
+
+  return {
+    strengths,
+    concerns,
+    conditionAdjustment: concerns.length
+      ? -Math.min(24, 10 + concerns.length * 6)
+      : Math.min(14, strengths.length * 5),
+    futureExpenseAdjustment: concerns.length
+      ? -Math.min(18, 7 + concerns.length * 5)
+      : Math.min(8, strengths.length * 3),
+  };
 }
 
 export function estimateMonthlyCost(property: Property): number | null {
@@ -535,9 +571,39 @@ export function propertyScoreBreakdown(
     ["walk", "walkable", "sidewalk", "transit", "bus", "train", "bike", "airport", "rideshare"]
   );
 
-  const bedroomNeed = buyerProfile?.household_size
-    ? clampScore(((property.bedrooms ?? 0) / Math.max(1, buyerProfile.household_size / 2)) * 65)
+  const targetBedrooms = buyerProfile?.minimum_bedrooms
+    ?? (buyerProfile?.household_size
+      ? Math.max(2, Math.ceil(buyerProfile.household_size / 2) + (buyerProfile.work_from_home ? 1 : 0))
+      : null);
+  const bedroomNeed = targetBedrooms
+    ? (() => {
+        if (property.bedrooms === null) return 55;
+        if (property.bedrooms < targetBedrooms) {
+          return clampScore(30 + (property.bedrooms / targetBedrooms) * 55);
+        }
+        return clampScore(90 + Math.min(10, (property.bedrooms - targetBedrooms) * 5));
+      })()
     : 72;
+  const targetSquareFeet = buyerProfile?.minimum_square_footage
+    ?? (buyerProfile?.household_size
+      ? Math.max(900, buyerProfile.household_size * 450 + (buyerProfile.work_from_home ? 250 : 0))
+      : null);
+  const squareFootageFit = targetSquareFeet
+    ? (() => {
+        if (property.square_footage === null) return 55;
+        if (property.square_footage < targetSquareFeet) {
+          return clampScore(35 + (property.square_footage / targetSquareFeet) * 50);
+        }
+        return clampScore(88 + Math.min(12, ((property.square_footage - targetSquareFeet) / targetSquareFeet) * 20));
+      })()
+    : null;
+  const bathroomFit = buyerProfile?.minimum_bathrooms
+    ? property.bathrooms === null
+      ? 55
+      : property.bathrooms < buyerProfile.minimum_bathrooms
+        ? clampScore(30 + (property.bathrooms / buyerProfile.minimum_bathrooms) * 55)
+        : clampScore(90 + Math.min(10, (property.bathrooms - buyerProfile.minimum_bathrooms) * 5))
+    : null;
   const officeFit = buyerProfile?.work_from_home ? property.remote_work_score : 75;
   const petFit = buyerProfile?.pets ? average([parksScore, property.lot_size ? 82 : 60]) : 75;
   const accessibilityFit = buyerProfile?.accessibility_needs || (futureReadiness?.accessibility_importance ?? 0) >= 3
@@ -584,7 +650,11 @@ export function propertyScoreBreakdown(
     recreationFit,
     transportationFit,
     propertyFeatureFit,
+    squareFootageFit,
+    bathroomFit,
   ]);
+
+  const listingSignals = listingDescriptionSignals(property.property_description);
 
   const femaFloodSafety = property.fema_flood_status === "mapped"
     ? property.fema_flood_risk_level === "high"
@@ -595,7 +665,7 @@ export function propertyScoreBreakdown(
           ? 92
           : 55
     : null;
-  const propertyRisk = average([
+  const propertyRisk = clampScore(average([
     CONDITION_SCORES[property.roof_condition],
     CONDITION_SCORES[property.hvac_condition],
     CONDITION_SCORES[property.foundation_condition],
@@ -605,7 +675,7 @@ export function propertyScoreBreakdown(
     CONDITION_SCORES[property.windows_condition],
     CONDITION_SCORES[property.exterior_condition],
     femaFloodSafety,
-  ]);
+  ]) + listingSignals.conditionAdjustment);
 
   const locationRisk = average([
     shoppingScore,
@@ -633,7 +703,9 @@ export function propertyScoreBreakdown(
     futureReadiness?.stair_tolerance === "prefer_single_level" && property.property_category === "townhome"
       ? -6
       : 0;
-  const futureExpenseRisk = clampScore(baseFutureExpenseRisk + maintenanceAdjustment + stairAdjustment);
+  const futureExpenseRisk = clampScore(
+    baseFutureExpenseRisk + maintenanceAdjustment + stairAdjustment + listingSignals.futureExpenseAdjustment
+  );
 
   const overall = clampScore(
     costScore * CATEGORY_WEIGHTS.costScore +
@@ -658,6 +730,10 @@ export function propertyScoreBreakdown(
     futureExpenseRisk,
     overall,
     fitScore: propertyFitScore,
+    listingSignals: {
+      strengths: listingSignals.strengths,
+      concerns: listingSignals.concerns,
+    },
   };
 }
 
@@ -694,6 +770,9 @@ export function generatePropertyInsights(
   if (scores.costScore >= 80) strengths.push("Core costs appear aligned with your target budget.");
   if (scores.locationRisk >= 80) strengths.push("Location amenities and walkability rate strongly.");
   if (scores.propertyRisk >= 80) strengths.push("Major visible condition categories look solid.");
+  if (scores.listingSignals.strengths.length) {
+    strengths.push(`Listing reports ${scores.listingSignals.strengths.join(", ")}; verify documentation and permits.`);
+  }
   if (scores.futureExpenseRisk >= 80) strengths.push("The property shows fewer visible future expense concerns.");
   if ((property.bedrooms ?? 0) >= 3) strengths.push("Bedroom count gives the household room to adapt.");
   if ((userPriorities?.pharmacies ?? 0) >= 3 && (property.healthcare_score ?? 0) >= 75) {
@@ -708,6 +787,9 @@ export function generatePropertyInsights(
 
   if (scores.costScore < 70) risks.push("Monthly costs may pressure the target payment.");
   if (scores.propertyRisk < 70) risks.push("Condition ratings point to inspection and repair risk.");
+  if (scores.listingSignals.concerns.length) {
+    risks.push(`Listing language flags ${scores.listingSignals.concerns.join(", ")}; verify the scope and cost.`);
+  }
   if (property.roof_condition === "poor" || property.roof_condition === "unknown") risks.push("Roof age or condition needs verification.");
   if (property.foundation_condition === "poor" || property.foundation_condition === "unknown") risks.push("Foundation uncertainty could become a major cost.");
   if (property.fema_flood_risk_level === "high") risks.push(`FEMA maps this coordinate in high-risk flood zone ${property.fema_flood_zone ?? "unknown"}.`);

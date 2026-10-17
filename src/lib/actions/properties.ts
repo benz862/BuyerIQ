@@ -605,6 +605,9 @@ export async function saveBuyerProfile(formData: FormData) {
     requires_lanai: parseBool("requires_lanai"),
     requires_no_carpet: parseBool("requires_no_carpet"),
     minimum_garage_spaces: parseNumber("minimum_garage_spaces"),
+    minimum_bedrooms: parseNumber("minimum_bedrooms"),
+    minimum_bathrooms: parseNumber("minimum_bathrooms"),
+    minimum_square_footage: parseNumber("minimum_square_footage"),
   }, { onConflict: "user_id" });
   if (buyerResult.error) redirectWithError(buyerResult.error.message);
 
