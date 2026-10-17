@@ -63,6 +63,33 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
   const [pastedFile, setPastedFile] = useState<File>();
   const [isPending, startTransition] = useTransition();
 
+  const usePastedImage = (file: File) => {
+    setPastedFile(file);
+    setMessage(undefined);
+  };
+
+  const pasteClipboardImage = async () => {
+    if (!navigator.clipboard?.read) {
+      setMessage("Your browser cannot read images from the clipboard. Click this area and press Cmd+V instead.");
+      return;
+    }
+
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      for (const clipboardItem of clipboardItems) {
+        const imageType = clipboardItem.types.find((type) => type.startsWith("image/"));
+        if (imageType) {
+          const image = await clipboardItem.getType(imageType);
+          usePastedImage(new File([image], `pasted-property-photo.${imageType.split("/")[1] || "png"}`, { type: imageType }));
+          return;
+        }
+      }
+      setMessage("No image was found in your clipboard. Copy an image, then try again.");
+    } catch {
+      setMessage("Chrome did not allow clipboard access. Click this area and press Cmd+V, or choose the image file instead.");
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -123,14 +150,16 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
           <div
             className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
             onPaste={(event) => {
-              const image = Array.from(event.clipboardData.files).find((file) => file.type.startsWith("image/"));
+              const image = Array.from(event.clipboardData.files).find((file) => file.type.startsWith("image/"))
+                ?? Array.from(event.clipboardData.items)
+                  .find((item) => item.kind === "file" && item.type.startsWith("image/"))
+                  ?.getAsFile();
               if (!image) {
                 setMessage("Paste an image, not a link or text.");
                 return;
               }
               event.preventDefault();
-              setPastedFile(image);
-              setMessage(undefined);
+              usePastedImage(image);
             }}
             role="region"
             tabIndex={0}
@@ -139,7 +168,7 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
                 <ClipboardPaste className="size-4 shrink-0" />
-                <span className="truncate">{pastedFile ? `Pasted image: ${pastedFile.name}` : "Or click here and paste an image from your clipboard"}</span>
+                <span className="truncate">{pastedFile ? `Pasted image: ${pastedFile.name}` : "Paste a copied image from your clipboard"}</span>
               </div>
               {pastedFile && (
                 <Button
@@ -154,7 +183,13 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
                 </Button>
               )}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">Only paste photos you are allowed to use.</p>
+            {!pastedFile && (
+              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={pasteClipboardImage}>
+                <ClipboardPaste className="size-4" />
+                Paste copied image
+              </Button>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">You can also click this area and press Cmd+V or Ctrl+V.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
