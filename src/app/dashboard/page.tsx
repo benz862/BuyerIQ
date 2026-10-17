@@ -5,6 +5,7 @@ import { PropertyCard } from "@/components/properties/property-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getUserProfile } from "@/lib/data/user-profile";
+import { getPropertyPhotoThumbnails } from "@/lib/data/property-photos";
 import { createClient } from "@/lib/supabase/server";
 import { hasMinPlan } from "@/lib/types/plans";
 import {
@@ -26,6 +27,7 @@ export default async function DashboardPage() {
   let typedBuyerProfile: BuyerProfile | null = null;
   let typedPriorities: UserPriorities | null = null;
   let typedReadiness: FutureReadinessProfile | null = null;
+  let photoThumbnails = new Map<string, string[]>();
 
   try {
     const supabase = await createClient();
@@ -68,6 +70,10 @@ export default async function DashboardPage() {
     typedBuyerProfile = buyerProfile as BuyerProfile | null;
     typedPriorities = userPriorities as UserPriorities | null;
     typedReadiness = futureReadiness as FutureReadinessProfile | null;
+    photoThumbnails = await getPropertyPhotoThumbnails(
+      supabase,
+      typedProperties.map((property) => property.id)
+    );
   } catch {
     // Local preview mode: render the dashboard shell before Supabase is configured.
   }
@@ -270,6 +276,7 @@ export default async function DashboardPage() {
                 buyerProfile={typedBuyerProfile}
                 userPriorities={typedPriorities}
                 futureReadiness={typedReadiness}
+                photoUrls={photoThumbnails.get(property.id)}
               />
             ))}
           </div>

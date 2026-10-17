@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfile } from "@/lib/data/user-profile";
+import { getPropertyPhotoThumbnails } from "@/lib/data/property-photos";
 import type { BuyerProfile, FutureReadinessProfile, Property, UserPriorities } from "@/lib/types/database";
 
 export default async function PropertiesPage() {
@@ -34,6 +35,10 @@ export default async function PropertiesPage() {
   const typedBuyerProfile = buyerProfile as BuyerProfile | null;
   const typedPriorities = userPriorities as UserPriorities | null;
   const typedReadiness = futureReadiness as FutureReadinessProfile | null;
+  const photoThumbnails = await getPropertyPhotoThumbnails(
+    supabase,
+    typedProperties.map((property) => property.id)
+  );
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
@@ -67,6 +72,7 @@ export default async function PropertiesPage() {
               buyerProfile={typedBuyerProfile}
               userPriorities={typedPriorities}
               futureReadiness={typedReadiness}
+              photoUrls={photoThumbnails.get(property.id)}
             />
           ))}
         </div>

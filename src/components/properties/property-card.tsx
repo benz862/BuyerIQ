@@ -18,17 +18,34 @@ export function PropertyCard({
   buyerProfile,
   userPriorities,
   futureReadiness,
+  photoUrls = [],
 }: {
   property: Property;
   buyerProfile?: BuyerProfile | null;
   userPriorities?: UserPriorities | null;
   futureReadiness?: FutureReadinessProfile | null;
+  photoUrls?: string[];
 }) {
   const scores = propertyScoreBreakdown(property, buyerProfile, userPriorities, futureReadiness);
+  const visiblePhotos = photoUrls.slice(0, 3);
 
   return (
     <Link href={`/dashboard/properties/${property.id}`}>
       <Card className="group transition-all hover:border-primary/30 hover:shadow-md">
+        {visiblePhotos.length > 0 && (
+          <div className="flex h-24 overflow-hidden border-b border-border/70 bg-muted" aria-label={`${property.property_name} photos`}>
+            {visiblePhotos.map((photoUrl, index) => (
+              // Signed storage URLs are temporary browser-only image sources.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={photoUrl}
+                src={photoUrl}
+                alt={`${property.property_name} photo ${index + 1}`}
+                className={visiblePhotos.length === 1 ? "w-full object-cover" : visiblePhotos.length === 2 ? "w-1/2 object-cover" : "w-1/3 object-cover"}
+              />
+            ))}
+          </div>
+        )}
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <CardTitle className="text-lg leading-snug">{property.property_name}</CardTitle>
