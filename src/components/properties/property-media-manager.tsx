@@ -218,19 +218,16 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="photo_category">Category</Label>
-              <Select name="category" defaultValue="Exterior">
+              <Select name="category" defaultValue="exterior">
                 <SelectTrigger id="photo_category" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Exterior">Exterior</SelectItem>
-                  <SelectItem value="Kitchen">Kitchen</SelectItem>
-                  <SelectItem value="Bathroom">Bathroom</SelectItem>
-                  <SelectItem value="Roof">Roof</SelectItem>
-                  <SelectItem value="HVAC">HVAC</SelectItem>
-                  <SelectItem value="Foundation">Foundation</SelectItem>
-                  <SelectItem value="Concern">Concern</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  <SelectItem value="exterior">Exterior</SelectItem>
+                  <SelectItem value="interior">Interior</SelectItem>
+                  <SelectItem value="roof">Roof</SelectItem>
+                  <SelectItem value="mechanical">Mechanical / HVAC</SelectItem>
+                  <SelectItem value="neighborhood">Neighborhood</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -242,9 +239,9 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="watch">Watch</SelectItem>
-                  <SelectItem value="verify">Verify</SelectItem>
-                  <SelectItem value="high">High concern</SelectItem>
+                  <SelectItem value="minor">Minor</SelectItem>
+                  <SelectItem value="moderate">Moderate</SelectItem>
+                  <SelectItem value="major">Major concern</SelectItem>
                 </SelectContent>
               </Select>
             </div>

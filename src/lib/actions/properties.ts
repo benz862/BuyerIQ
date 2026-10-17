@@ -477,8 +477,14 @@ export async function savePropertyPhoto(formData: FormData) {
 
   const { supabase, user } = await requireOwnedProperty(propertyId);
   const caption = formData.get("caption")?.toString().trim() || null;
-  const category = formData.get("category")?.toString().trim() || "Property";
-  const concernLevel = formData.get("concern_level")?.toString().trim() || null;
+  const category = formData.get("category")?.toString().trim() || "exterior";
+  const concernLevel = formData.get("concern_level")?.toString().trim() || "none";
+  const photoCategories = new Set(["exterior", "interior", "roof", "mechanical", "neighborhood"]);
+  const concernLevels = new Set(["none", "minor", "moderate", "major"]);
+
+  if (!photoCategories.has(category) || !concernLevels.has(concernLevel)) {
+    return { error: "Choose a valid photo category and concern level." };
+  }
   const concernTags = formData
     .get("concern_tags")
     ?.toString()
