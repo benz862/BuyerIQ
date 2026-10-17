@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Camera, ClipboardPaste, Loader2, Upload, UserRoundPlus, X } from "lucide-react";
 import { savePropertyContact, savePropertyPhoto } from "@/lib/actions/properties";
 import { createClient } from "@/lib/supabase/client";
@@ -61,7 +61,19 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<string>();
   const [pastedFile, setPastedFile] = useState<File>();
+  const [pastedPreviewUrl, setPastedPreviewUrl] = useState<string>();
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!pastedFile) {
+      setPastedPreviewUrl(undefined);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(pastedFile);
+    setPastedPreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [pastedFile]);
 
   const usePastedImage = (file: File) => {
     setPastedFile(file);
@@ -188,6 +200,18 @@ export function PropertyPhotoUploader({ propertyId }: { propertyId: string }) {
                 <ClipboardPaste className="size-4" />
                 Paste copied image
               </Button>
+            )}
+            {pastedPreviewUrl && (
+              <div className="mt-3 overflow-hidden rounded-md border border-border bg-background">
+                {/* Clipboard previews use a temporary browser-only URL. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={pastedPreviewUrl}
+                  alt="Preview of pasted property photo"
+                  className="aspect-[4/3] w-full object-cover"
+                />
+                <p className="border-t border-border px-3 py-2 text-xs font-medium text-foreground">Image ready to save</p>
+              </div>
             )}
             <p className="mt-2 text-xs text-muted-foreground">You can also click this area and press Cmd+V or Ctrl+V.</p>
           </div>
